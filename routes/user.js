@@ -1,3 +1,4 @@
+//사용자 모델 및 유틸리티
 const express = require('express');
 const router = express.Router();
 const db = require('../db');

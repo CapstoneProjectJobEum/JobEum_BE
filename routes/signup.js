@@ -1,3 +1,4 @@
+//회원가입
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
@@ -33,12 +34,12 @@ router.post('/signup', async (req, res) => {
       password: hashedPassword,
       email,
       phone,
-      name: userType === '회원' ? name : null,
-      birth: userType === '회원' ? birth : null,
-      gender: userType === '회원' ? gender : null,
-      company: userType === '기업' ? company : null,
-      biz_number: userType === '기업' ? bizNumber : null,
-      manager: userType === '기업' ? manager : null,
+      name: userType === '개인회원' ? name : null,
+      birth: userType === '개인회원' ? birth : null,
+      gender: userType === '개인회원' ? gender : null,
+      company: userType === '기업회원' ? company : null,
+      biz_number: userType === '기업회원' ? bizNumber : null,
+      manager: userType === '기업회원' ? manager : null,
     };
 
     const [result] = await db.query('INSERT INTO users SET ?', userData);

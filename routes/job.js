@@ -1,3 +1,4 @@
+// 메인페이지
 // routes/job.js
 const express = require('express');
 const router = express.Router();
