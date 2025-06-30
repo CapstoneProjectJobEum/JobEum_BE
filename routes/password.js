@@ -3,7 +3,7 @@ const router = express.Router();
 const db = require('../db');
 
 // 가상의 인증코드 검증 로직 (임시 하드코딩)
-router.post('/verify-code', async (req, res) => {
+/*router.post('/verify-code', async (req, res) => {
   const { username, email, verifyCode } = req.body;
 
   if (!username || !email || !verifyCode) {
@@ -32,6 +32,6 @@ router.post('/verify-code', async (req, res) => {
     console.error('인증 오류:', err);
     res.status(500).json({ success: false, message: '서버 오류' });
   }
-});
+}); */
 
 module.exports = router;
