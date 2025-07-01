@@ -1,5 +1,13 @@
+const express = require('express');
+const router = express.Router();
+const db = require('../db');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+
+const SECRET_KEY = process.env.JWT_SECRET;
+
 router.post('/login', async (req, res) => {
-  const { username, password, userType: requestedUserType } = req.body;  // 클라이언트에서 받은 userType 추가
+  const { username, password, userType: requestedUserType } = req.body;
 
   try {
     const [users] = await db.query('SELECT * FROM users WHERE username = ?', [username]);
@@ -14,22 +22,31 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ success: false, message: '비밀번호가 틀렸습니다.' });
     }
 
-    // userType 불일치 체크 추가
     if (user.user_type !== requestedUserType) {
       return res.status(403).json({
         success: false,
-        message: `${requestedUserType} 로그인 창에서는 ${user.user_type} 로그인이 불가합니다.`
+        message: `${requestedUserType}만 로그인 가능합니다.`,
       });
     }
+
+    const token = jwt.sign(
+      { id: user.id, username: user.username, userType: user.user_type },
+      SECRET_KEY,
+      { expiresIn: '30d' }
+    );
 
     res.json({
       success: true,
       message: '로그인 성공',
-      userType: user.user_type,
+      token,
+      id: user.id,
       username: user.username,
+      userType: user.user_type,
     });
   } catch (err) {
     console.error('로그인 오류:', err);
     res.status(500).json({ success: false, message: '서버 오류가 발생했습니다.' });
   }
 });
+
+module.exports = router;
