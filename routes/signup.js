@@ -1,4 +1,3 @@
-//회원가입
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
@@ -17,13 +16,18 @@ router.post('/signup', async (req, res) => {
     phone,
     company,
     bizNumber,
-    manager
+    manager,
   } = req.body;
 
   try {
-    const [existing] = await db.query('SELECT * FROM users WHERE username = ?', [username]);
-    if (existing.length > 0) {
-      return res.status(400).json({ success: false, message: '이미 존재하는 아이디입니다.' });
+    const [existingUsername] = await db.query('SELECT * FROM users WHERE username = ?', [username]);
+    if (existingUsername.length > 0) {
+      return res.status(409).json({ success: false, message: '이미 존재하는 아이디입니다.' });
+    }
+
+    const [existingEmail] = await db.query('SELECT * FROM users WHERE email = ?', [email]);
+    if (existingEmail.length > 0) {
+      return res.status(409).json({ success: false, message: '이미 사용 중인 이메일입니다.' });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
