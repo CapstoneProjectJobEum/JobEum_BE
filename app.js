@@ -3,14 +3,15 @@ const express = require('express');
 const cors = require('cors');
 
 const findIdRouter = require('./routes/findId');
-const passwordRouter = require('./routes/password'); 
+const passwordRouter = require('./routes/password'); // ❗ verify-code 제거된 버전
 const userRouter = require('./routes/user');
 const jobRouter = require('./routes/job');
 const signupRouter = require('./routes/signup');
 const loginRouter = require('./routes/login');
-const sendCodeRouter = require('./routes/sendCode');     
-const verifyCodeRouter = require('./routes/verifyCode'); 
-const socialAuthRouter = require("./routes/socialAuth"); // ✅ 추가
+const sendCodeRouter = require('./routes/sendCode');     // ✅ 추가
+const verifyCodeRouter = require('./routes/verifyCode'); // ✅ 추가
+const checkDuplicateRoutes = require("./routes/checkDuplicate");
+const checkUserRouter = require("./routes/checkUser");
 
 const app = express();
 
@@ -20,12 +21,13 @@ app.use(express.json());
 app.use('/api', findIdRouter);
 app.use('/api', signupRouter);
 app.use('/api', loginRouter);
-app.use('/api', passwordRouter);      
-app.use('/api', sendCodeRouter.router);       
-app.use('/api', verifyCodeRouter);     
-app.use("/api", socialAuthRouter); // ✅ 추가
+app.use('/api', passwordRouter);       // reset-password만 남김
+app.use('/api', sendCodeRouter.router);       // ✅
+app.use('/api', verifyCodeRouter);     // ✅
 app.use('/api/user-profile', userRouter);
 app.use('/api/jobs', jobRouter);
+app.use("/api", checkDuplicateRoutes);
+app.use("/api", checkUserRouter);
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, '0.0.0.0', () => {
