@@ -10,6 +10,7 @@ const signupRouter = require('./routes/signup');
 const loginRouter = require('./routes/login');
 const sendCodeRouter = require('./routes/sendCode');     // ✅ 추가
 const verifyCodeRouter = require('./routes/verifyCode'); // ✅ 추가
+const checkDuplicateRoutes = require("./routes/checkDuplicate");
 
 const app = express();
 
@@ -24,6 +25,7 @@ app.use('/api', sendCodeRouter.router);       // ✅
 app.use('/api', verifyCodeRouter);     // ✅
 app.use('/api/user-profile', userRouter);
 app.use('/api/jobs', jobRouter);
+app.use("/api", checkDuplicateRoutes);
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, '0.0.0.0', () => {
