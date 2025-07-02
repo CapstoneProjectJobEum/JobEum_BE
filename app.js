@@ -12,6 +12,8 @@ const sendCodeRouter = require('./routes/sendCode');     // ✅ 추가
 const verifyCodeRouter = require('./routes/verifyCode'); // ✅ 추가
 const checkDuplicateRoutes = require("./routes/checkDuplicate");
 const checkUserRouter = require("./routes/checkUser");
+const socialAuthRoutes = require('./routes/socialAuth');
+const withDrawRoutes = require('./routes/withDraw');
 
 const app = express();
 
@@ -21,13 +23,15 @@ app.use(express.json());
 app.use('/api', findIdRouter);
 app.use('/api', signupRouter);
 app.use('/api', loginRouter);
-app.use('/api', passwordRouter);       // reset-password만 남김
-app.use('/api', sendCodeRouter.router);       // ✅
-app.use('/api', verifyCodeRouter);     // ✅
+app.use('/api', passwordRouter);
+app.use('/api', sendCodeRouter.router);
+app.use('/api', verifyCodeRouter);
+app.use("/api", socialAuthRoutes);
 app.use('/api/user-profile', userRouter);
 app.use('/api/jobs', jobRouter);
 app.use("/api", checkDuplicateRoutes);
 app.use("/api", checkUserRouter);
+app.use("/api", withDrawRoutes);
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, '0.0.0.0', () => {
