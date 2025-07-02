@@ -10,9 +10,13 @@ const signupRouter = require('./routes/signup');
 const loginRouter = require('./routes/login');
 const sendCodeRouter = require('./routes/sendCode');     
 const verifyCodeRouter = require('./routes/verifyCode'); 
+<<<<<<< HEAD
 const socialAuthRouter = require("./routes/socialAuth"); 
 const accountRouter = require("./routes/account"); // ✅ 추가
 const ChangePasswordRouter = require("./routes/ChangePassword"); // ✅ 추가
+=======
+const socialAuthRouter = require("./routes/socialAuth"); // ✅ 추가
+>>>>>>> 217cbcfa6dd6e49ead6d503a74753ecb9fd5a3bf
 
 const app = express();
 
@@ -25,9 +29,13 @@ app.use('/api', loginRouter);
 app.use('/api', passwordRouter);      
 app.use('/api', sendCodeRouter.router);       
 app.use('/api', verifyCodeRouter);     
+<<<<<<< HEAD
 app.use("/api", socialAuthRouter); 
 app.use("/api", accountRouter); // ✅ 추가
 app.use("/api", ChangePasswordRouter); // ✅ 추가
+=======
+app.use("/api", socialAuthRouter); // ✅ 추가
+>>>>>>> 217cbcfa6dd6e49ead6d503a74753ecb9fd5a3bf
 app.use('/api/user-profile', userRouter);
 app.use('/api/jobs', jobRouter);
 

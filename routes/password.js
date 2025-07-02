@@ -2,7 +2,11 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 
+<<<<<<< HEAD
 // 비밀번호 재설정(이메일 포함)
+=======
+// 비밀번호 재설정
+>>>>>>> 217cbcfa6dd6e49ead6d503a74753ecb9fd5a3bf
 router.post("/reset-password", async (req, res) => {
   const { username, email, password } = req.body;
 
@@ -20,6 +24,7 @@ router.post("/reset-password", async (req, res) => {
       return res.status(404).json({ success: false, message: "사용자를 찾을 수 없습니다." });
     }
 
+<<<<<<< HEAD
     // 비밀번호 복잡성 검사
     if (!/^(?=.*[a-zA-Z])(?=.*\d)(?=.*[!@#$%^&*]).{8,16}$/.test(password)) {
       return res.status(400).json({
@@ -27,6 +32,8 @@ router.post("/reset-password", async (req, res) => {
       message: "비밀번호는 8~16자, 영문/숫자/특수문자를 포함해야 합니다.",
     });
 }
+=======
+>>>>>>> 217cbcfa6dd6e49ead6d503a74753ecb9fd5a3bf
     const bcrypt = require("bcryptjs");
     const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -39,7 +46,11 @@ router.post("/reset-password", async (req, res) => {
   } catch (err) {
     console.error("비밀번호 재설정 오류:", err);
     res.status(500).json({ success: false, message: "서버 오류가 발생했습니다." });
+<<<<<<< HEAD
   } 
+=======
+  }
+>>>>>>> 217cbcfa6dd6e49ead6d503a74753ecb9fd5a3bf
 });
 
 module.exports = router;

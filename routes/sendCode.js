@@ -1,4 +1,7 @@
+<<<<<<< HEAD
 // 이메일 코드 전송 라우터
+=======
+>>>>>>> 217cbcfa6dd6e49ead6d503a74753ecb9fd5a3bf
 require("dotenv").config();
 const express = require("express");
 const router = express.Router();

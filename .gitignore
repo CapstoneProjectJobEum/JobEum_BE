@@ -42,4 +42,8 @@ jest-coverage/
 *.tmp
 
 # 기타 개인 설정
+<<<<<<< HEAD
 *.local
+=======
+*.local
+>>>>>>> 217cbcfa6dd6e49ead6d503a74753ecb9fd5a3bf

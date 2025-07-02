@@ -76,4 +76,8 @@ router.post("/check-duplicate", async (req, res) => {
     }
 });
 
+<<<<<<< HEAD
 module.exports = router;
+=======
+module.exports = router;
+>>>>>>> 217cbcfa6dd6e49ead6d503a74753ecb9fd5a3bf

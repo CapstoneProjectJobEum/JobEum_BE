@@ -12,8 +12,14 @@
   "dependencies": {
     "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
+<<<<<<< HEAD
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
+=======
+    "dotenv": "^16.6.1",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
+>>>>>>> 217cbcfa6dd6e49ead6d503a74753ecb9fd5a3bf
     "mysql2": "^3.14.1",
     "nodemailer": "^7.0.3"
   },
