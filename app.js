@@ -8,12 +8,13 @@ const userRouter = require('./routes/user');
 const jobRouter = require('./routes/job');
 const signupRouter = require('./routes/signup');
 const loginRouter = require('./routes/login');
-const sendCodeRouter = require('./routes/sendCode');     // ✅ 추가
-const verifyCodeRouter = require('./routes/verifyCode'); // ✅ 추가
+const sendCodeRouter = require('./routes/sendCode');    
+const verifyCodeRouter = require('./routes/verifyCode'); 
 const checkDuplicateRoutes = require("./routes/checkDuplicate");
 const checkUserRouter = require("./routes/checkUser");
 const socialAuthRoutes = require('./routes/socialAuth');
 const withDrawRoutes = require('./routes/withDraw');
+const companyRoutes = require('./routes/company'); // 기업회원 관련 라우터
 
 const app = express();
 
@@ -32,6 +33,7 @@ app.use('/api/jobs', jobRouter);
 app.use("/api", checkDuplicateRoutes);
 app.use("/api", checkUserRouter);
 app.use("/api", withDrawRoutes);
+app.use('/api/companies', companyRoutes);// 기업회원 관련 라우터 추가
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, '0.0.0.0', () => {
