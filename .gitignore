@@ -17,6 +17,9 @@ pnpm-debug.log*
 .DS_Store       # macOS
 Thumbs.db       # Windows
 
+# 업로드된 사용자 파일
+uploads/
+
 # 로그 파일
 logs/
 *.log
