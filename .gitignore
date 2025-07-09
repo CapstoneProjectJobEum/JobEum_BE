@@ -17,8 +17,17 @@ pnpm-debug.log*
 .DS_Store       # macOS
 Thumbs.db       # Windows
 
-# 업로드된 사용자 파일
-uploads/
+# uploads 폴더는 포함시키되
+!uploads/
+
+# uploads 안의 이미지 파일은 무시
+uploads/*.png
+uploads/*.jpg
+uploads/*.jpeg
+uploads/*.webp
+uploads/*.gif
+uploads/*.bmp
+uploads/*.svg
 
 # 로그 파일
 logs/
