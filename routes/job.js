@@ -33,6 +33,14 @@ const formatDeadline = (dateStr) => {
   return `${dateStr.slice(0, 4)}-${dateStr.slice(4, 6)}-${dateStr.slice(6, 8)}`;
 };
 
+const safeStringify = (input) => {
+  try {
+    return typeof input === 'string' ? input : JSON.stringify(input);
+  } catch {
+    return null;
+  }
+};
+
 // --------------------
 // 1. 채용공고 목록 조회
 // --------------------
@@ -73,7 +81,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // --------------------
-// 3. 이미지 업로드 (최대 5개)
+// 3. 이미지 업로드
 // --------------------
 router.post('/upload-images', upload.array('images', 5), (req, res) => {
   if (!req.files || req.files.length === 0) {
@@ -101,14 +109,14 @@ router.post('/', async (req, res) => {
   try {
     const [result] = await db.query(`
       INSERT INTO job_post 
-        (user_id, title, company, location, deadline, career, education, detail, summary, working_conditions, disability_requirements, images)
+      (user_id, title, company, location, deadline, career, education, detail, summary, working_conditions, disability_requirements, images)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, [
       user_id, title, company, location, deadline, career, education,
       detail || null, summary || null,
       working_conditions || null,
-      disability_requirements ? JSON.stringify(disability_requirements) : null,
-      images ? JSON.stringify(images) : null
+      safeStringify(disability_requirements),
+      safeStringify(images)
     ]);
     res.json({ success: true, id: result.insertId });
   } catch (err) {
@@ -138,11 +146,10 @@ router.put('/:id', async (req, res) => {
       title, company, location, deadline,
       career, education, detail || null, summary || null,
       working_conditions || null,
-      disability_requirements ? JSON.stringify(disability_requirements) : null,
-      images ? JSON.stringify(images) : null,
+      safeStringify(disability_requirements),
+      safeStringify(images),
       id
     ]);
-
     if (result.affectedRows === 0) {
       return res.status(404).json({ success: false, message: "공고가 없습니다." });
     }
@@ -158,7 +165,7 @@ router.put('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   const { id } = req.params;
   try {
-    const [result] = await db.query('DELETE FROM job_post WHERE id = ?', [id]);
+    const [result] = await db.query('DELETE FROM job_post WHERE id=?', [id]);
     if (result.affectedRows === 0) {
       return res.status(404).json({ success: false, message: "공고가 없습니다." });
     }
@@ -180,31 +187,23 @@ router.get('/recommend/:userId', async (req, res) => {
     const [jobs] = await db.query('SELECT * FROM job_post');
     const matched = jobs.filter(job => {
       const reqs = safeJsonParse(job.disability_requirements, {});
-      let matchCount = 0;
+      let score = 0;
 
-      if (reqs.disabilityGrade && reqs.disabilityGrade === profile.disability_grade) matchCount++;
+      if (!reqs.disabilityGrade || reqs.disabilityGrade !== profile.disability_grade) return false;
 
-      if (reqs.disabilityTypes) {
-        const userTypes = safeJsonParse(profile.disability_types, []);
-        if (reqs.disabilityTypes.some(r => userTypes.includes(r))) matchCount++;
-      }
+      const userTypes = safeJsonParse(profile.disability_types, []);
+      if (Array.isArray(reqs.disabilityTypes) && reqs.disabilityTypes.some(r => userTypes.includes(r))) score++;
 
-      if (reqs.assistiveDevices) {
-        const userDevices = safeJsonParse(profile.assistive_devices, []);
-        if (reqs.assistiveDevices.some(r => userDevices.includes(r))) matchCount++;
-      }
+      const userDevices = safeJsonParse(profile.assistive_devices, []);
+      if (Array.isArray(reqs.assistiveDevices) && reqs.assistiveDevices.some(r => userDevices.includes(r))) score++;
 
-      if (reqs.preferredWorkType) {
-        const userWorkTypes = safeJsonParse(profile.preferred_work_type, []);
-        if (reqs.preferredWorkType.some(r => userWorkTypes.includes(r))) matchCount++;
-      }
+      const userWorkTypes = safeJsonParse(profile.preferred_work_type, []);
+      if (Array.isArray(reqs.preferredWorkType) && reqs.preferredWorkType.some(r => userWorkTypes.includes(r))) score++;
 
-      if (reqs.jobInterest) {
-        const userInterests = safeJsonParse(profile.job_interest, []);
-        if (reqs.jobInterest.some(r => userInterests.includes(r))) matchCount++;
-      }
+      const userInterests = safeJsonParse(profile.job_interest, []);
+      if (Array.isArray(reqs.jobInterest) && reqs.jobInterest.some(r => userInterests.includes(r))) score++;
 
-      return matchCount >= 2;
+      return score >= 2;
     });
 
     const parsedJobs = matched.slice(0, 5).map(job => ({
