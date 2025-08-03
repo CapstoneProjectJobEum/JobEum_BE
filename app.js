@@ -5,7 +5,7 @@ const path = require('path');
 
 const findIdRouter = require('./routes/findId');
 const passwordRouter = require('./routes/password'); // ❗ verify-code 제거된 버전
-const userRouter = require('./routes/user');
+const userProfileRouter = require('./routes/userProfile');
 const jobRouter = require('./routes/job');
 const signupRouter = require('./routes/signup');
 const loginRouter = require('./routes/login');
@@ -15,7 +15,7 @@ const checkDuplicateRoutes = require("./routes/checkDuplicate");
 const checkUserRouter = require("./routes/checkUser");
 const socialAuthRoutes = require('./routes/socialAuth');
 const withDrawRoutes = require('./routes/withDraw');
-const companyRoutes = require('./routes/company'); 
+const companyRoutes = require('./routes/company');
 const companyProfileRouter = require('./routes/companyProfile'); // 1.기업 정보 수정 라우터
 const accountInfoRouter = require('./routes/accountInfo'); // 2. 계정 정보 수정 라우터
 
@@ -32,7 +32,7 @@ app.use('/api', passwordRouter);
 app.use('/api', sendCodeRouter.router);
 app.use('/api', verifyCodeRouter);
 app.use("/api", socialAuthRoutes);
-app.use('/api/user-profile', userRouter);
+app.use('/api/user-profile', userProfileRouter);
 app.use('/api/jobs', jobRouter);
 app.use("/api", checkDuplicateRoutes);
 app.use("/api", checkUserRouter);
