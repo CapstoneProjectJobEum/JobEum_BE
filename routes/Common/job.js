@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const path = require('path');
-const db = require('../db');
+const db = require('../../db');
 
 // multer 설정: uploads 폴더에 파일 저장
 const storage = multer.diskStorage({

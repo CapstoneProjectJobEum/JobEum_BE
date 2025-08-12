@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const axios = require('axios');
 const jwt = require('jsonwebtoken');
-const pool = require('../db');
+const pool = require('../../db');
 require('dotenv').config();
 
 console.log('JWTSECRET:', process.env.JWT_SECRET);

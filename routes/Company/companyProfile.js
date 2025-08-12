@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const db = require('../db');
+const db = require('../../db');
 
 // 기업 프로필 조회 API
 router.get('/:user_id', async (req, res) => {
