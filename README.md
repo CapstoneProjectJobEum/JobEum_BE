@@ -23,12 +23,6 @@ node app.js
 4. Base URL 
 http://localhost:4000
 
-5. 
-
-6. 
-
-
-
 🛠️ 참고사항
 - 모든 요청은 Content-Type: application/json으로 전송할것
 - CORS 처리가 되어 있어 로컬 프론트에서 바로 요청할 수 있음
