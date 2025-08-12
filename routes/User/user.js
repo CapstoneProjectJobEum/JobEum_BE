@@ -1,8 +1,9 @@
 //사용자 모델 및 유틸리티
 const express = require('express');
 const router = express.Router();
-const db = require('../db');
+const db = require('../../db');
 
+// 사용자 프로필 생성 API (POST /api/user-profile)
 router.post('/', async (req, res) => {
   const {
     disabilityTypes,

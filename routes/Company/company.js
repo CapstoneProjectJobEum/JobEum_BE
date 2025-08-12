@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const db = require('../db');
+const db = require('../../db');
 
-// 기업회원 등록 (POST,회원가입시)
+// 기업회원 등록 API (POST,회원가입시)
 router.post('/', async (req, res) => {
   const {
     company,

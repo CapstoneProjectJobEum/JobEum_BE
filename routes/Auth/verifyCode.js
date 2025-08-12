@@ -3,6 +3,8 @@ const express = require("express");
 const router = express.Router();
 const { codeStore } = require("./sendCode");
 
+// 이메일 인증번호 확인 API
+// 클라이언트에게서 G-mail과 인증번호를 받아서 확인하는 API임
 router.post("/verify-code", (req, res) => {
   console.log("📦 받은 데이터:", req.body);
 

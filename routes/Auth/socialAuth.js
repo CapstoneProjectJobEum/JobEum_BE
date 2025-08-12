@@ -2,11 +2,12 @@ const express = require('express');
 const router = express.Router();
 const axios = require('axios');
 const jwt = require('jsonwebtoken');
-const pool = require('../db');
+const pool = require('../../db');
 require('dotenv').config();
 
 console.log('JWTSECRET:', process.env.JWT_SECRET);
 
+// 소셜 로그인 API
 // JWT 생성 함수
 const createJWT = (user) => {
     return jwt.sign(

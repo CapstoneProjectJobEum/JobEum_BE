@@ -9,7 +9,7 @@ function generateCode() {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
-// 개인회원용 메일 전송기
+// 개인회원용 메일 API (Gmail)
 const personalTransporter = nodemailer.createTransport({
   service: "gmail",
   auth: {

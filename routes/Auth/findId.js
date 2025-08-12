@@ -1,7 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const db = require('../db');
+const db = require('../../db');
 
+// 아이디 찾기 API (개인/기업)
+// 기업회원과 일반회원 모두 지원
 router.post('/find-id', async (req, res) => {
   const { userType, name, email } = req.body;
 

@@ -2,10 +2,11 @@
 
 const express = require('express');
 const router = express.Router();
-const db = require('../db');
+const db = require('../../db');
 const bcrypt = require("bcryptjs");
 const jwt = require('jsonwebtoken');
 
+// 비밀번호 재설정 API
 // 인증 미들웨어
 function authMiddleware(req, res, next) {
   const authHeader = req.headers.authorization;

@@ -1,9 +1,9 @@
 // routes/checkUser.js
 const express = require("express");
 const router = express.Router();
-const db = require("../db");
+const db = require("../../db");
 
-// 아이디 + 이메일 존재 여부 확인
+// 아이디 + 이메일 존재 여부 확인 API
 router.post("/check-user", async (req, res) => {
     const { username, email } = req.body;
 

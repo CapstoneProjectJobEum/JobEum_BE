@@ -1,8 +1,9 @@
 // routes/withdraw.js
 const express = require("express");
 const router = express.Router();
-const db = require("../db");
+const db = require("../../db");
 
+// 회원 탈퇴 API(개인/기업)
 router.post("/withdraw", async (req, res) => {
     const { email, sns_id, sns_provider } = req.body;
 

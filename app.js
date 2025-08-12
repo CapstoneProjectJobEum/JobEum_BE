@@ -4,7 +4,7 @@ const cors = require('cors');
 const path = require('path');
 
 const findIdRouter = require('./routes/findId');
-const passwordRouter = require('./routes/password'); // ❗ verify-code 제거된 버전
+const passwordRouter = require('./routes/password'); 
 const userRouter = require('./routes/user');
 const jobRouter = require('./routes/job');
 const signupRouter = require('./routes/signup');
@@ -16,8 +16,12 @@ const checkUserRouter = require("./routes/checkUser");
 const socialAuthRoutes = require('./routes/socialAuth');
 const withDrawRoutes = require('./routes/withDraw');
 const companyRoutes = require('./routes/company'); 
-const companyProfileRouter = require('./routes/companyProfile'); // 1.기업 정보 수정 라우터
-const accountInfoRouter = require('./routes/accountInfo'); // 2. 계정 정보 수정 라우터
+const companyProfileRouter = require('./routes/companyProfile'); 
+const accountInfoRouter = require('./routes/accountInfo');
+const categoryRouter = require('./routes/category'); // 1. 카테고리 관련 라우터
+const jobCategoryRouter = require('./routes/jobCategory'); // 2. 채용 공고 카테고리 관련 라우터
+const adminRouter = require('./routes/admin'); // 3. 관리자 관련 라우터
+const searchRouter = require('./routes/search');  // 4. 검색 관련 라우터
 
 const app = express();
 
@@ -38,8 +42,12 @@ app.use("/api", checkDuplicateRoutes);
 app.use("/api", checkUserRouter);
 app.use("/api", withDrawRoutes);
 app.use('/api/companies', companyRoutes);
-app.use('/api/company-profile', companyProfileRouter); // 1.기업 정보 수정 라우터
-app.use('/api/account-info', accountInfoRouter); // 2. 계정 정보 수정 라우터
+app.use('/api/company-profile', companyProfileRouter); 
+app.use('/api/account-info', accountInfoRouter); 
+app.use('/api/categories', categoryRouter); // 카테고리 관련 API
+app.use('/api/jobs', jobCategoryRouter);  // 카테고리 설정용 API
+app.use('/api/admin', adminRouter); // 관리자 관련 API
+app.use('/api/search', searchRouter); // 검색 관련 API
 
 
 const PORT = process.env.PORT || 4000;
