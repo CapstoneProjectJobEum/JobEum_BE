@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const db = require("../db");
+const db = require("../../db");
 
 // 중복 검사 API
 router.post("/check-duplicate", async (req, res) => {
