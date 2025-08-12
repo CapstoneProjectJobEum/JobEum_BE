@@ -1,7 +1,7 @@
 // routes/withdraw.js
 const express = require("express");
 const router = express.Router();
-const db = require("../db");
+const db = require("../../db");
 
 router.post("/withdraw", async (req, res) => {
     const { email, sns_id, sns_provider } = req.body;
