@@ -7,7 +7,7 @@ const jwt = require('jsonwebtoken');
 const SECRET_KEY = process.env.JWT_SECRET;
 
 router.post('/login', async (req, res) => {
-  const { username, password, userType: requestedUserType } = req.body;
+  const { username, userType: requestedUserType, password } = req.body;
 
   try {
     const [users] = await db.query('SELECT * FROM users WHERE username = ?', [username]);
@@ -29,8 +29,14 @@ router.post('/login', async (req, res) => {
       });
     }
 
+    // JWT payload에 role 추가
     const token = jwt.sign(
-      { id: user.id, username: user.username, userType: user.user_type },
+      {
+        id: user.id,
+        username: user.username,
+        userType: user.user_type,
+        role: user.role,  // role 추가
+      },
       SECRET_KEY,
       { expiresIn: '30d' }
     );
@@ -42,6 +48,7 @@ router.post('/login', async (req, res) => {
       id: user.id,
       username: user.username,
       userType: user.user_type,
+      role: user.role,  // role 추가
     });
   } catch (err) {
     console.error('로그인 오류:', err);
