@@ -1,31 +1,30 @@
-// 검색 API
+// 검색 API (수정된 예시)
 const router = require('express').Router();
 const db = require('../../db');
 
 router.get('/', async (req, res) => {
-    const { q = '', page = 1, size = 20 } = req.query;
-    const limit = Number(size);
-    const offset = (Number(page) - 1) * limit;
+    const { q = '' } = req.query;
 
     if (q.trim().length < 2) {
         return res.status(400).json({ message: '검색어는 2글자 이상 입력하세요.' });
     }
 
-    const [rows] = await db.query(
-        `
-    SELECT jp.id, jp.title, jp.content, jp.created_at
-    FROM job_post jp
-    LEFT JOIN job_post_category jpc ON jpc.job_post_id = jp.id
-    LEFT JOIN category c ON c.id = jpc.category_id
-    WHERE CONCAT_WS(' ', jp.title, jp.content, c.name) LIKE CONCAT('%', ?, '%')
-    GROUP BY jp.id
-    ORDER BY jp.created_at DESC
-    LIMIT ? OFFSET ?
-    `,
-        [q, limit, offset]
-    );
+    try {
+        const [rows] = await db.query(
+            `
+            SELECT jp.id, jp.title, jp.company, jp.location, jp.detail, jp.summary, jp.deadline, jp.created_at
+            FROM job_post jp
+            WHERE CONCAT_WS(' ', jp.title, jp.company, jp.detail, jp.summary)
+            LIKE CONCAT('%', ?, '%')
+            ORDER BY jp.created_at DESC
+            `,
+            [q]
+        );
 
-    res.json(rows);
+        res.json(rows);  // 상세 데이터 그대로 내려줌
+    } catch (err) {
+        res.status(500).json({ message: '서버 오류' });
+    }
 });
 
 module.exports = router;
