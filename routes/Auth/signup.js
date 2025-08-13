@@ -3,6 +3,18 @@ const router = express.Router();
 const db = require('../../db');
 const bcrypt = require('bcryptjs');
 
+// userType에 따른 role 매핑 함수
+function mapUserTypeToRole(userType) {
+  switch (userType) {
+    case '개인회원':
+      return 'MEMBER';
+    case '기업회원':
+      return 'COMPANY';
+    default:
+      return 'MEMBER'; // 기본값
+  }
+}
+
 // 회원가입 API
 router.post('/signup', async (req, res) => {
   const {
@@ -31,11 +43,14 @@ router.post('/signup', async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-
     const genderValid = gender === '남자' || gender === '여자' ? gender : null;
+
+    // userType 기반 role 결정
+    const role = mapUserTypeToRole(userType);
 
     const userData = {
       user_type: userType,
+      role,  // 추가된 부분
       username,
       password: hashedPassword,
       email,
