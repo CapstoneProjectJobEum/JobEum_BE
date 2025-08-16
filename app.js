@@ -22,7 +22,6 @@ const withDrawRoutes = require('./routes/Auth/withDraw');
 
 // Category
 const categoryRouter = require('./routes/Category/category');
-const jobCategoryRouter = require('./routes/Category/jobCategory');
 
 // Common
 const accountInfoRouter = require('./routes/Common/accountInfo');
@@ -31,6 +30,8 @@ const jobRouter = require('./routes/Common/job');
 // Company
 const companyRoutes = require('./routes/Company/company');
 const companyProfileRouter = require('./routes/Company/companyProfile');
+
+
 
 // Inquiry_Report
 const inquiryRouter = require('./routes/Inquiry_Report/inquiry');
@@ -45,6 +46,9 @@ const searchRouter = require('./routes/Search/search');
 
 // User
 const userProfileRouter = require('./routes/User/userProfile');
+const resumesRouter = require('./routes/User/resumes');
+const applicationsRouter = require('./routes/User/applications');
+const userActivityRouter = require('./routes/User/userActivity');
 
 const app = express();
 
@@ -69,8 +73,7 @@ app.use('/api', verifyCodeRouter);
 app.use("/api", withDrawRoutes);
 
 // Category
-app.use('/api/categories', categoryRouter);
-app.use('/api/jobs', jobCategoryRouter);
+app.use('/api/category', categoryRouter);
 
 // Common
 app.use('/api/account-info', requireAuth, accountInfoRouter);
@@ -89,6 +92,9 @@ app.use('/api/search', searchRouter);
 
 // User
 app.use('/api/user-profile', requireAuth, userProfileRouter);
+app.use('/api/resumes', requireAuth, resumesRouter);
+app.use('/api/applications', requireAuth, applicationsRouter);
+app.use('/api/user-activity', requireAuth, userActivityRouter);
 
 const PORT = process.env.PORT || 4000;
 

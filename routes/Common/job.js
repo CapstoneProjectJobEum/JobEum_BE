@@ -26,15 +26,57 @@ const safeJsonParse = (input, defaultValue) => {
   }
 };
 
+const safeStringify = (input) => {
+  try {
+    if (input === undefined || input === null) return null;
+    return (typeof input === 'string') ? input : JSON.stringify(input);
+  } catch {
+    return null;
+  }
+};
+
+
 // "YYYYMMDD" → "YYYY-MM-DD" 포맷 변환
 const formatDeadline = (dateStr) => {
   if (!dateStr || dateStr.length !== 8) return dateStr;
   return `${dateStr.slice(0, 4)}-${dateStr.slice(4, 6)}-${dateStr.slice(6, 8)}`;
 };
 
+// 필수값 검사
+const validateJobPayload = (body) => {
+  const required = ['title', 'company', 'location', 'deadline', 'detail', 'summary'];
+  const missing = required.filter(k => !String(body[k] ?? '').trim());
+  if (missing.length) return `필수값 누락: ${missing.join(', ')}`;
+  return null;
+};
+
+// 프론트 하위호환: personalized만 왔을 때 disability_requirements 채워주기
+const deriveDisabilityReq = (disability_requirements, personalized) => {
+  if (disability_requirements && Array.isArray(disability_requirements)) return disability_requirements;
+  const p = safeJsonParse(personalized, null);
+  if (p && Array.isArray(p.disabilityTypes)) return p.disabilityTypes;
+  return null;
+};
+
 // 1. 채용공고 목록 조회
 router.get('/', async (req, res) => {
   try {
+    const { companyId } = req.query;
+
+    if (companyId) {
+      const [rows] = await db.query('SELECT * FROM job_post WHERE user_id = ? ORDER BY id DESC', [companyId]);
+      const jobs = rows.map(job => ({
+        ...job,
+        deadline: formatDeadline(job.deadline),
+        images: safeJsonParse(job.images, []),
+        working_conditions: job.working_conditions,
+        disability_requirements: safeJsonParse(job.disability_requirements, null),
+        filters: safeJsonParse(job.filters, null),
+        personalized: safeJsonParse(job.personalized, null),
+      }));
+      return res.json(jobs);
+    }
+
     const [rows] = await db.query('SELECT * FROM job_post ORDER BY id DESC');
     const jobs = rows.map(job => ({
       ...job,
@@ -42,12 +84,16 @@ router.get('/', async (req, res) => {
       images: safeJsonParse(job.images, []),
       working_conditions: job.working_conditions,
       disability_requirements: safeJsonParse(job.disability_requirements, null),
+      filters: safeJsonParse(job.filters, null),
+      personalized: safeJsonParse(job.personalized, null),
     }));
     res.json(jobs);
   } catch (err) {
+    console.error('GET /jobs 오류:', err);
     res.status(500).json({ success: false, message: err.message });
   }
 });
+
 
 // 2. 채용공고 상세 조회
 router.get('/:id', async (req, res) => {
@@ -82,27 +128,40 @@ router.post('/', async (req, res) => {
   const {
     user_id,
     title, company, location, deadline,
-    career, education, detail, summary,
+    detail, summary,
     working_conditions,
-    disability_requirements,
-    images
+    disability_requirements, // array|null (하위호환)
+    images,                  // array|null
+    filters,                 // object|null (고용형태/지역/직무/회사유형 등)
+    personalized             // object|null (장애유형/등급/보조기기/직무관심/근무형태)
   } = req.body;
 
   try {
+    const err = validateJobPayload(req.body);
+    if (err) return res.status(400).json({ success: false, message: err });
+
+    // personalized만 왔을 경우 하위호환 컬럼 채움
+    const effectiveDisabilityReq = deriveDisabilityReq(disability_requirements, personalized);
+
     const [result] = await db.query(`
       INSERT INTO job_post
-      (user_id, title, company, location, deadline, career, education, detail, summary, working_conditions, disability_requirements, images)
+      (user_id, title, company, location, deadline, detail, summary,
+       working_conditions, disability_requirements, images, filters, personalized)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, [
       user_id,
       title, company, location, deadline,
-      career, education, detail, summary,
+      detail, summary,
       working_conditions || null,
-      disability_requirements ? JSON.stringify(disability_requirements) : null,
-      images ? JSON.stringify(images) : null
+      safeStringify(effectiveDisabilityReq),
+      safeStringify(images),
+      safeStringify(filters),
+      safeStringify(personalized),
     ]);
+
     res.json({ success: true, id: result.insertId });
   } catch (err) {
+    console.error('POST /jobs 오류:', err);
     res.status(500).json({ success: false, message: err.message });
   }
 });
@@ -110,44 +169,48 @@ router.post('/', async (req, res) => {
 // 5. 채용공고 수정
 router.put('/:id', async (req, res) => {
   const { id } = req.params;
-  console.log('[DEBUG] job_post update id:', id);
   const {
     title, company, location, deadline,
-    career, education, detail, summary,
+    detail, summary,
     working_conditions,
     disability_requirements,
-    images
+    images,
+    filters,
+    personalized
   } = req.body;
 
-  const safeStringify = (input) => {
-    try {
-      return typeof input === 'string' ? input : JSON.stringify(input);
-    } catch {
-      return null;
-    }
-  };
-
   try {
+    const err = validateJobPayload({
+      title, company, location, deadline, detail, summary
+    });
+    if (err) return res.status(400).json({ success: false, message: err });
+
+    const effectiveDisabilityReq = deriveDisabilityReq(disability_requirements, personalized);
+
     const [result] = await db.query(
       `UPDATE job_post
-       SET title=?, company=?, location=?, deadline=?, career=?, education=?,
-           detail=?, summary=?, working_conditions=?, disability_requirements=?, images=?
+         SET title=?, company=?, location=?, deadline=?, 
+             detail=?, summary=?, working_conditions=?,
+             disability_requirements=?, images=?, filters=?, personalized=?
        WHERE id=?`,
       [
         title, company, location, deadline,
-        career, education, detail, summary,
+        detail, summary,
         working_conditions || null,
-        safeStringify(disability_requirements),
+        safeStringify(effectiveDisabilityReq),
         safeStringify(images),
+        safeStringify(filters),
+        safeStringify(personalized),
         id
       ]
     );
+
     if (result.affectedRows === 0) {
       return res.status(404).json({ success: false, message: "공고가 없습니다." });
     }
     res.json({ success: true, message: "수정되었습니다." });
   } catch (err) {
-    console.error('PUT /job_post/:id 오류:', err); // 🔥 꼭 로그 찍기
+    console.error('PUT /jobs/:id 오류:', err);
     res.status(500).json({ success: false, message: err.message });
   }
 });
@@ -172,54 +235,66 @@ router.get('/recommend/:userId', async (req, res) => {
 
   try {
     const [[profile]] = await db.query('SELECT * FROM user_profile WHERE user_id = ?', [userId]);
+
     if (!profile) {
       return res.status(404).json({ success: false, message: '회원 정보가 없습니다.' });
     }
 
     const [jobs] = await db.query('SELECT * FROM job_post');
-    const matched = jobs.filter(job => {
-      const reqs = JSON.parse(job.disability_requirements || '{}');
 
-      // 1. 장애등급이 일치하지 않으면 무조건 제외
-      if (!reqs.disabilityGrade || reqs.disabilityGrade !== profile.disability_grade) {
-        return false;
-      }
+
+    const matched = jobs.filter(job => {
+      const reqs = safeJsonParse(job.disability_requirements, {});
+      const pers = safeJsonParse(job.personalized, {});
+
+
+      const requireGrade = pers.disabilityGrade || reqs.disabilityGrade;
+      const requiredGrades = Array.isArray(requireGrade) ? requireGrade : [requireGrade];
+
+      if (!requiredGrades.includes(profile.disability_grade)) return false;
 
       let score = 0;
 
-      // 2. 장애 유형
-      if (Array.isArray(reqs.disabilityTypes)) {
-        const user = JSON.parse(profile.disability_types || '[]');
-        if (reqs.disabilityTypes.some(r => user.includes(r))) score++;
-      }
+      const hit = (a, b) => {
+        const A = Array.isArray(a) ? a : safeJsonParse(a, []);
+        const B = Array.isArray(b) ? b : safeJsonParse(b, []);
+        return A.some(v => B.includes(v));
+      };
 
-      // 3. 보조기기
-      if (Array.isArray(reqs.assistiveDevices)) {
-        const user = JSON.parse(profile.assistive_devices || '[]');
-        if (reqs.assistiveDevices.some(r => user.includes(r))) score++;
-      }
+      // 문자열 필드를 배열로 변환
+      const userTypes = profile.disability_types.split(',').map(s => s.trim());
+      const userDevices = profile.assistive_devices.split(',').map(s => s.trim());
+      const userWorkType = profile.preferred_work_type.split(',').map(s => s.trim());
+      const userInterest = profile.job_interest.split(',').map(s => s.trim());
 
-      // 4. 선호 근무형태
-      if (Array.isArray(reqs.preferredWorkType)) {
-        const user = JSON.parse(profile.preferred_work_type || '[]');
-        if (reqs.preferredWorkType.some(r => user.includes(r))) score++;
-      }
+      // 1) 장애 유형
+      const reqTypes = pers.disabilityTypes || reqs.disabilityTypes;
+      if (hit(reqTypes, userTypes)) score++;
 
-      // 5. 관심 직무
-      if (Array.isArray(reqs.jobInterest)) {
-        const user = JSON.parse(profile.job_interest || '[]');
-        if (reqs.jobInterest.some(r => user.includes(r))) score++;
-      }
+      // 2) 보조기기
+      const reqDevices = pers.assistiveDevices || reqs.assistiveDevices;
+      if (hit(reqDevices, userDevices)) score++;
 
-      // 4개 중 2개 이상 일치해야 추천됨
+      // 3) 선호 근무형태
+      const reqWorkType = pers.preferredWorkType || reqs.preferredWorkType;
+      if (hit(reqWorkType, userWorkType)) score++;
+
+      // 4) 관심 직무
+      const reqInterest = pers.jobInterest || reqs.jobInterest;
+      if (hit(reqInterest, userInterest)) score++;
+
+
       return score >= 2;
     });
 
+
     res.json(matched);
   } catch (err) {
+    console.error('GET /jobs/recommend/:userId 오류:', err);
     res.status(500).json({ success: false, message: err.message });
   }
 });
+
 
 
 module.exports = router;
