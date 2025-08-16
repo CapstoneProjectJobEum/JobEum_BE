@@ -10,12 +10,6 @@ router.post('/', async (req, res) => {
     manager,
     email,
     phone,
-    industry, // 업종 
-    introduction, // 회사 소개
-    location, // 회사 위치
-    establishedAt, // 설립일
-    employees, // 직원 수
-    homepage // 홈페이지 
   } = req.body;
 
   try {
