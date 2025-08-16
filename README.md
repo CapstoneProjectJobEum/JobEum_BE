@@ -9,6 +9,7 @@ Node.js + Express로 개발한 잡이음 프로젝트 백엔드 API입니다.
 1. 의존성 설치
    ```bash
    npm install
+   npm install multer
 
 2. .env 파일 예시
 DB_HOST=localhost
