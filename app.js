@@ -95,7 +95,7 @@ app.use('/api/resumes', requireAuth, resumesRouter);
 app.use('/api/applications', requireAuth, applicationsRouter);
 app.use('/api/user-activity', requireAuth, userActivityRouter);
 
-// CRON JOB: 1분마다 마감 공고 자동 비활성화
+// CRON JOB: 자정마다 마감 공고 자동 비활성화
 cron.schedule("0 0 * * *", async () => {
   try {
     await db.query(`
