@@ -2,7 +2,8 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-
+const cron = require("node-cron");
+const db = require("./db");
 
 // Admin
 const adminRouter = require('./routes/Admin/admin');
@@ -30,8 +31,6 @@ const jobRouter = require('./routes/Common/job');
 // Company
 const companyRoutes = require('./routes/Company/company');
 const companyProfileRouter = require('./routes/Company/companyProfile');
-
-
 
 // Inquiry_Report
 const inquiryRouter = require('./routes/Inquiry_Report/inquiry');
@@ -95,6 +94,23 @@ app.use('/api/user-profile', requireAuth, userProfileRouter);
 app.use('/api/resumes', requireAuth, resumesRouter);
 app.use('/api/applications', requireAuth, applicationsRouter);
 app.use('/api/user-activity', requireAuth, userActivityRouter);
+
+// CRON JOB: 1분마다 마감 공고 자동 비활성화
+cron.schedule("0 0 * * *", async () => {
+  try {
+    await db.query(`
+      UPDATE job_post
+      SET status = 'inactive'
+      WHERE STR_TO_DATE(deadline, '%Y-%m-%d') < CURDATE()
+        AND status = 'active'
+    `);
+    console.log(" 마감된 공고 자동 비활성화 실행됨");
+  } catch (err) {
+    console.error("자동 비활성화 오류:", err.message);
+  }
+}, {
+  timezone: "Asia/Seoul"
+});
 
 const PORT = process.env.PORT || 4000;
 
