@@ -112,6 +112,62 @@ cron.schedule("0 0 * * *", async () => {
   timezone: "Asia/Seoul"
 });
 
+
+const aiRouter = require("./routes/AI/ai");
+app.use("/api/ai", aiRouter);
+
+
+cron.schedule("*/1 * * * *", () => {
+  console.log("📌 [CRON] Python 스크립트 실행 시작...");
+
+  exec(
+    "cd ../JobEumAiServer && venv/bin/python export_and_send.py",
+    (error, stdout, stderr) => {
+      if (error) {
+        console.error("❌ Python 실행 에러:", error.message);
+        return;
+      }
+      if (stderr) {
+        console.error("⚠️ Python stderr:", stderr);
+      }
+      console.log("✅ Python stdout:", stdout);
+    }
+  );
+});
+
+const PY_URL = process.env.PY_REC_URL || "http://localhost:5001"; // FastAPI 서버
+
+const axios = require("axios");
+const { exec } = require("child_process");
+
+cron.schedule("*/1 * * * *", async () => {
+  console.log("📌 [CRON] Python AI 서버 학습 시작");
+
+  try {
+    // 캐시된 데이터 가져오기
+    const { data: cache } = await axios.get("http://localhost:4000/api/ai/cache");
+
+    console.log(cache);
+
+    const payload = {
+      user_profiles: cache.userProfiles.filter(p => p.user_id), // user_id 있는 것만 필터
+      user_activities: Object.values(cache.userActivities).flat(), // userActivities 객체를 배열로 변환
+      job_posts: cache.jobPosts
+    };
+    console.log(payload);
+
+
+    // Python 학습 호출
+    const response = await axios.post(`${PY_URL}/train`, payload);
+
+    console.log("✅ Python 학습 완료:", response.data);
+  } catch (err) {
+    console.error("❌ Python 학습 실패:", err.message);
+  }
+});
+
+
+
 const PORT = process.env.PORT || 4000;
 
 createAdminIfNotExists().then(() => {
