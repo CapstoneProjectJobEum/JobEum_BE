@@ -1,32 +1,61 @@
 const router = require('express').Router();
 const db = require('../../db');
 const { requireAuth, requireRole } = require('../Middleware/auth');
+const { createNotification } = require('./services/notificationService'); 
 
 router.use(requireAuth, requireRole('ADMIN'));
 
 // 채용공고 삭제
 router.delete('/jobs/:id', async (req, res) => {
-    try {
-        const userId = req.user.id;
-        const userRole = req.user.role;
+  try {
+    const userId = req.user.id;
+    const userRole = req.user.role;
 
-        const jobId = req.params.id;
-        const [jobs] = await db.query('SELECT user_id FROM job_post WHERE id = ?', [jobId]);
+    const jobId = Number(req.params.id);
 
-        if (jobs.length === 0) {
-            return res.status(404).json({ success: false, message: '채용공고가 없습니다.' });
-        }
+    // 삭제 전: 소유자/회사/제목 조회
+    const [[job]] = await db.query(
+      `SELECT jp.id AS job_post_id,
+              jp.user_id AS company_user_id,
+              jp.title   AS job_title,
+              jp.company AS company_name
+         FROM job_post jp
+        WHERE jp.id = ?
+        LIMIT 1`,
+      [jobId]
+    );
 
-        const jobOwnerId = jobs[0].user_id;
-        if (userId !== Number(jobOwnerId) && userRole !== 'ADMIN') {
-            return res.status(403).json({ success: false, message: '삭제 권한이 없습니다.' });
-        }
-
-        await db.query('DELETE FROM job_post WHERE id = ?', [jobId]);
-        res.json({ success: true });
-    } catch (err) {
-        res.status(500).json({ success: false, message: err.message });
+    if (!job) {
+      return res.status(404).json({ success: false, message: '채용공고가 없습니다.' });
     }
+
+    // 권한 체크 (router.use로 ADMIN만 통과하지만, 소유자 허용 로직 유지하려면 아래 조건)
+    if (userId !== Number(job.company_user_id) && userRole !== 'ADMIN') {
+      return res.status(403).json({ success: false, message: '삭제 권한이 없습니다.' });
+    }
+
+    // 실제 삭제
+    await db.query('DELETE FROM job_post WHERE id = ?', [jobId]);
+
+    // 알림 트리거: 관리자에 의한 공고 삭제 
+    try {
+      const io = req.app.get('io'); 
+      await createNotification(io, {
+        userId: job.company_user_id,         
+        type: 'EMP_JOB_DELETED_BY_ADMIN',
+        title: '공고 삭제 안내',
+        message: `[${job.company_name}] '${job.job_title}' 공고가 관리자에 의해 삭제되었습니다.`,
+        metadata: { job_post_id: job.job_post_id }
+      });
+    } catch (e) {
+      console.error('[notify] admin job delete notify error:', e);
+    }
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('admin delete job error:', err);
+    res.status(500).json({ success: false, message: err.message });
+  }
 });
 
 // 문의 목록 조회
@@ -98,7 +127,6 @@ router.patch('/inquiries/:id', async (req, res) => {
     }
 });
 
-
 // 신고 목록 조회
 router.get('/reports', async (req, res) => {
     const { status = 'OPEN' } = req.query;
@@ -151,7 +179,6 @@ router.get('/reports/:id', async (req, res) => {
     }
 });
 
-
 // 신고 답변 작성/상태 업데이트 (PATCH 하나로 통합)
 router.patch('/reports/:id', async (req, res) => {
     const reportId = Number(req.params.id);
@@ -181,7 +208,5 @@ router.patch('/reports/:id', async (req, res) => {
         res.status(500).json({ success: false, message: err.message });
     }
 });
-
-
 
 module.exports = router;

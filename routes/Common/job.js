@@ -3,6 +3,7 @@ const router = express.Router();
 const multer = require('multer');
 const path = require('path');
 const db = require('../../db');
+const { createBulkNotifications } = require('./services/notificationService');
 
 // multer 설정: uploads 폴더에 파일 저장
 const storage = multer.diskStorage({
@@ -158,6 +159,35 @@ router.post('/', async (req, res) => {
       safeStringify(filters),
       safeStringify(personalized),
     ]);
+
+    // [추가] 관심 기업 팔로워에게 “신규 공고” 알림 생성 + 실시간 송신 
+    const io = req.app.get('io');
+    const jobPostId = result.insertId;
+
+    // followers 찾기: user_favorite_company.company_id = 공고 게시자의 user_id
+    const [followers] = await db.query(
+      `SELECT ufc.user_id
+         FROM user_favorite_company ufc
+        WHERE ufc.company_id = ?`,
+      [user_id]
+    );
+
+    if (followers.length) {
+      const rows = followers.map(f => ({
+        userId: f.user_id,
+        type: 'NEW_JOB_FROM_FAVORITE_COMPANY',
+        title: '관심 기업의 새 채용공고',
+        message: `[${company}] '${title}' 공고가 등록되었습니다.`,
+        // 메타데이터는 프론트에서 상세 이동에 활용
+        metadata: {
+          job_post_id: jobPostId,
+          company_id: user_id,   // 회사(계정) user_id
+          company_name: company, // 회사명(문자열)
+          title
+        }
+      }));
+      await createBulkNotifications(io, rows);
+    }
 
     res.json({ success: true, id: result.insertId });
   } catch (err) {
