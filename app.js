@@ -2,7 +2,8 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-
+const cron = require("node-cron");
+const db = require("./db");
 
 // Admin
 const adminRouter = require('./routes/Admin/admin');
@@ -22,7 +23,6 @@ const withDrawRoutes = require('./routes/Auth/withDraw');
 
 // Category
 const categoryRouter = require('./routes/Category/category');
-const jobCategoryRouter = require('./routes/Category/jobCategory');
 
 // Common
 const accountInfoRouter = require('./routes/Common/accountInfo');
@@ -45,6 +45,9 @@ const searchRouter = require('./routes/Search/search');
 
 // User
 const userProfileRouter = require('./routes/User/userProfile');
+const resumesRouter = require('./routes/User/resumes');
+const applicationsRouter = require('./routes/User/applications');
+const userActivityRouter = require('./routes/User/userActivity');
 
 const app = express();
 
@@ -69,8 +72,7 @@ app.use('/api', verifyCodeRouter);
 app.use("/api", withDrawRoutes);
 
 // Category
-app.use('/api/categories', categoryRouter);
-app.use('/api/jobs', jobCategoryRouter);
+app.use('/api/category', categoryRouter);
 
 // Common
 app.use('/api/account-info', requireAuth, accountInfoRouter);
@@ -89,6 +91,26 @@ app.use('/api/search', searchRouter);
 
 // User
 app.use('/api/user-profile', requireAuth, userProfileRouter);
+app.use('/api/resumes', requireAuth, resumesRouter);
+app.use('/api/applications', requireAuth, applicationsRouter);
+app.use('/api/user-activity', requireAuth, userActivityRouter);
+
+// CRON JOB: 자정마다 마감 공고 자동 비활성화
+cron.schedule("0 0 * * *", async () => {
+  try {
+    await db.query(`
+      UPDATE job_post
+      SET status = 'inactive'
+      WHERE STR_TO_DATE(deadline, '%Y-%m-%d') < CURDATE()
+        AND status = 'active'
+    `);
+    console.log(" 마감된 공고 자동 비활성화 실행됨");
+  } catch (err) {
+    console.error("자동 비활성화 오류:", err.message);
+  }
+}, {
+  timezone: "Asia/Seoul"
+});
 
 const PORT = process.env.PORT || 4000;
 
