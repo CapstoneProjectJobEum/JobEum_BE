@@ -164,7 +164,7 @@ cron.schedule('0 9 * * *', async () => {
   try {
     const io = app.get('io');
     await runFavoriteDeadlineJob(io);
-    console.log('[cron] deadline notifications sent');
+    console.log('관심 공고 마감 임박 알림 전송 완료');
   } catch (e) {
     console.error('[cron] error', e);
   }
@@ -175,7 +175,7 @@ cron.schedule('2 9 * * *', async () => {  // 09:02 KST
   try {
     const io = app.get('io');
     await runCompanyDeadlineJob(io);
-    console.log('[cron] company deadline notifications sent');
+    console.log('등록 공고 마감 임박 알림 전송 완료');
   } catch (e) {
     console.error('[cron] company deadline error', e);
   }
