@@ -26,6 +26,17 @@ const mapGender = (gender) => {
     return null;
 };
 
+
+const formatPhoneNumber = (raw) => {
+    if (!raw) return null;
+    let digits = raw.replace(/[^0-9]/g, ''); // 숫자만 추출
+    // +82 시작이면 0으로 바꾸기
+    if (digits.startsWith('82')) {
+        digits = '0' + digits.slice(2);
+    }
+    return digits;
+};
+
 // DB에서 유저 찾거나 생성
 const findOrCreateUser = async (userData) => {
     const conn = await pool.getConnection();
@@ -83,7 +94,7 @@ router.get('/oauth/kakao/callback', async (req, res) => {
             birth: kakao.birthyear && kakao.birthday
                 ? `${kakao.birthyear}${kakao.birthday.replace(/[^0-9]/g, '')}`
                 : null,
-            phone: kakao.phone_number,
+            phone: formatPhoneNumber(kakao.phone_number),
         };
 
         const user = await findOrCreateUser(userData);
@@ -130,7 +141,7 @@ router.get('/oauth/naver/callback', async (req, res) => {
             birth: profile.birthyear && profile.birthday
                 ? `${profile.birthyear}${profile.birthday.replace(/[^0-9]/g, '')}`
                 : null,
-            phone: profile.mobile,
+            phone: formatPhoneNumber(profile.mobile),
         };
 
         const user = await findOrCreateUser(userData);

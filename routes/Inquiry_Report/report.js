@@ -1,6 +1,7 @@
 const router = require('express').Router();
 const db = require('../../db');
 const { requireAuth } = require('../Middleware/auth');
+const { createBulkNotifications } = require('../Services/notificationService');
 
 const TARGET_TYPES = ['JOB_POST', 'COMPANY', 'USER'];
 
@@ -23,6 +24,7 @@ async function existsUser(userId) {
 // 신고 생성 (개인/기업 공통)
 router.post('/', requireAuth, async (req, res) => {
     const { target_type, target_id, reason } = req.body;
+
     if (!TARGET_TYPES.includes(target_type)) {
         return res.status(400).json({ success: false, message: 'target_type이 올바르지 않습니다.' });
     }
@@ -37,11 +39,39 @@ router.post('/', requireAuth, async (req, res) => {
         if (target_type === 'USER') ok = await existsUser(target_id);
         if (!ok) return res.status(404).json({ success: false, message: '신고 대상이 존재하지 않습니다.' });
 
+        // 1) 신고 저장
         const [r] = await db.query(
             'INSERT INTO report (reporter_user_id, target_type, target_id, reason) VALUES (?, ?, ?, ?)',
             [req.user.id, target_type, target_id, reason]
         );
-        res.status(201).json({ success: true, id: r.insertId });
+        const reportId = r.insertId;
+
+        // 2) 관리자 알림 (새 신고 등록)
+        try {
+            const [admins] = await db.query(`SELECT id AS admin_id FROM users WHERE role='ADMIN'`);
+            if (admins.length) {
+                const io = req.app.get('io');
+                const rows = admins.map(a => ({
+                    userId: a.admin_id,
+                    role: 'ADMIN',
+                    type: 'ADMIN_REPORT_CREATED',
+                    title: '새 신고 등록',
+                    message: `새 신고가 접수되었습니다: 사유='${reason}'`,
+                    metadata: {
+                        report_id: reportId,
+                        from_user_id: req.user.id,
+                        target_type,
+                        target_id
+                    }
+                }));
+                await createBulkNotifications(io, rows);
+            }
+        } catch (notifyErr) {
+            console.error('[notify] admin report created error:', notifyErr);
+            // 알림 실패해도 신고 생성은 성공 처리
+        }
+
+        res.status(201).json({ success: true, id: reportId });
     } catch (e) {
         res.status(500).json({ success: false, message: e.message });
     }
@@ -52,9 +82,9 @@ router.get('/me', requireAuth, async (req, res) => {
     try {
         const [items] = await db.query(
             `SELECT id, target_type, target_id, reason, answer, status, created_at, answered_at
-             FROM report
-             WHERE reporter_user_id=? AND deleted_at IS NULL
-             ORDER BY created_at DESC`,
+         FROM report
+        WHERE reporter_user_id=? AND deleted_at IS NULL
+        ORDER BY created_at DESC`,
             [req.user.id]
         );
 
@@ -63,7 +93,6 @@ router.get('/me', requireAuth, async (req, res) => {
         res.status(500).json({ success: false, message: e.message });
     }
 });
-
 
 // 신고 삭제 (작성자: OPEN 상태만, 관리자: 언제나 가능)
 router.delete('/:id', requireAuth, async (req, res) => {
