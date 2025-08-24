@@ -1,6 +1,7 @@
 const router = require('express').Router();
 const db = require('../../db');
 const { requireAuth } = require('../Middleware/auth');
+const { createBulkNotifications } = require('../Services/notificationService');
 
 // 문의 API
 
@@ -15,11 +16,34 @@ router.post('/', requireAuth, async (req, res) => {
     }
 
     try {
+        // 1) 문의 저장
         const [r] = await db.query(
             'INSERT INTO inquiry (user_id, type, title, content) VALUES (?, ?, ?, ?)',
             [req.user.id, type, title, content]
         );
-        res.status(201).json({ success: true, id: r.insertId });
+        const inquiryId = r.insertId;
+
+        // 2) 관리자 알림 (새 문의 등록)
+        try {
+            const [admins] = await db.query(`SELECT id AS admin_id FROM users WHERE role = 'ADMIN'`);
+            if (admins.length) {
+                const io = req.app.get('io');
+                const rows = admins.map(a => ({
+                    userId: a.admin_id,
+                    role: 'ADMIN',
+                    type: 'ADMIN_INQUIRY_CREATED',
+                    title: '새 문의 등록',
+                    message: `새 문의가 등록되었습니다: '${title}'`,
+                    metadata: { inquiry_id: inquiryId, from_user_id: req.user.id, type }
+                }));
+                await createBulkNotifications(io, rows);
+            }
+        } catch (notifyErr) {
+            console.error('[notify] admin inquiry created error:', notifyErr);
+            // 알림 실패해도 문의 생성은 성공 처리
+        }
+
+        res.status(201).json({ success: true, id: inquiryId });
     } catch (e) {
         res.status(500).json({ success: false, message: e.message });
     }
@@ -30,9 +54,9 @@ router.get('/me', requireAuth, async (req, res) => {
     try {
         const [items] = await db.query(
             `SELECT id, type, title, content, answer, answered_at, status, created_at
-             FROM inquiry
-             WHERE user_id=? AND deleted_at IS NULL
-             ORDER BY created_at DESC`,
+       FROM inquiry
+       WHERE user_id=? AND deleted_at IS NULL
+       ORDER BY created_at DESC`,
             [req.user.id]
         );
 
@@ -43,8 +67,6 @@ router.get('/me', requireAuth, async (req, res) => {
         res.status(500).json({ success: false, message: e.message });
     }
 });
-
-
 
 // 문의 삭제 (작성자: 앱연 상태만, 관리자: 언제나 가능)(delete)
 router.delete('/:id', requireAuth, async (req, res) => {
