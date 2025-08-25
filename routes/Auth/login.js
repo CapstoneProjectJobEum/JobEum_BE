@@ -3,6 +3,7 @@ const router = express.Router();
 const db = require('../../db');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { ensureNotificationSettings } = require('../../utils/createDefaultNotification');
 
 const SECRET_KEY = process.env.JWT_SECRET;
 
@@ -29,13 +30,16 @@ router.post('/login', async (req, res) => {
       });
     }
 
+    // ✅ 로그인 성공 직후 알림 설정 보장
+    await ensureNotificationSettings(user.id, user.role);
+
     // JWT payload에 role 추가
     const token = jwt.sign(
       {
         id: user.id,
         username: user.username,
         userType: user.user_type,
-        role: user.role,  // role 추가
+        role: user.role,
       },
       SECRET_KEY,
       { expiresIn: '30d' }
@@ -48,7 +52,7 @@ router.post('/login', async (req, res) => {
       id: user.id,
       username: user.username,
       userType: user.user_type,
-      role: user.role,  // role 추가
+      role: user.role,
     });
   } catch (err) {
     console.error('로그인 오류:', err);
