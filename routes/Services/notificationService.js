@@ -1,4 +1,3 @@
-// services/notificationService.js
 const db = require('../../db');
 
 // 실시간 송신
@@ -8,7 +7,7 @@ function emitToUser(io, userId, event, payload) {
 
 // 사용자가 해당 알림 받도록 설정했는지 체크
 async function isAllowedNotification(userId, type, role) {
-    if (!role) return false; // role 없으면 차단
+    if (!role) return false;
 
     const [rows] = await db.query(
         `SELECT all_notifications, settings
@@ -17,7 +16,7 @@ async function isAllowedNotification(userId, type, role) {
         [userId, role]
     );
 
-    // DB에 없으면 → 기본 차단
+    // DB에 없으면 => 기본 차단
     if (!rows.length) return false;
 
     const { all_notifications, settings } = rows[0];
@@ -83,7 +82,7 @@ async function createBulkNotifications(io, rows) {
     const filteredRows = [];
 
     for (const r of rows) {
-        if (!r.role) continue; // role 없으면 skip
+        if (!r.role) continue;
         if (await isAllowedNotification(r.userId, r.type, r.role)) {
             filteredRows.push(r);
         }

@@ -14,7 +14,7 @@ async function createAdminIfNotExists() {
     try {
         const [rows] = await db.query('SELECT * FROM users WHERE username = ?', [adminUsername]);
         if (rows.length > 0) {
-            console.log('관리자 계정이 이미 존재합니다.');
+            console.log('[관리자] 관리자 계정이 이미 존재합니다.');
             return;
         }
 
@@ -23,7 +23,7 @@ async function createAdminIfNotExists() {
         const adminUser = {
             username: adminUsername,
             password: hashedPassword,
-            user_type: '개인회원',  // 관리자용 기본 user_type 지정 (필요 시 변경)
+            user_type: '개인회원',
             role: 'ADMIN',
             email: null,
             phone: null,

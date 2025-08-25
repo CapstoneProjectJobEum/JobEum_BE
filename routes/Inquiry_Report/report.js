@@ -77,7 +77,7 @@ router.post('/', requireAuth, async (req, res) => {
     }
 });
 
-// 내 신고 목록 (삭제되지 않은 것만, 페이지 관련 코드 제거)
+// 내 신고 목록
 router.get('/me', requireAuth, async (req, res) => {
     try {
         const [items] = await db.query(
@@ -94,7 +94,7 @@ router.get('/me', requireAuth, async (req, res) => {
     }
 });
 
-// 신고 삭제 (작성자: OPEN 상태만, 관리자: 언제나 가능)
+// 신고 삭제
 router.delete('/:id', requireAuth, async (req, res) => {
     const id = Number(req.params.id);
     try {

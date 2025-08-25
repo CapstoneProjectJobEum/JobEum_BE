@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../../db');
 
-// 전체 사용자 프로필 조회 (GET /api/user-profile)
+// 전체 사용자 프로필 조회
 router.get('/', async (req, res) => {
   try {
     const [rows] = await db.query('SELECT * FROM user_profile');
@@ -13,7 +13,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-// 특정 사용자 프로필 조회 (GET /api/user-profile/:userId)
+// 특정 사용자 프로필 조회
 router.get('/:userId', async (req, res) => {
   const { userId } = req.params;
   try {
@@ -31,7 +31,7 @@ router.get('/:userId', async (req, res) => {
   }
 });
 
-// 사용자 프로필 생성 (POST /api/user-profile)
+// 사용자 프로필 생성
 router.post('/', async (req, res) => {
   const {
     userId,
@@ -67,7 +67,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-// 사용자 프로필 수정/추가 (Upsert) (PUT /api/user-profile)
+// 사용자 프로필 수정/추가
 router.put('/', async (req, res) => {
   const {
     userId,

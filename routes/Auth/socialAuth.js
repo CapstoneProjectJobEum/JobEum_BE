@@ -6,8 +6,6 @@ const pool = require('../../db');
 require('dotenv').config();
 const { ensureNotificationSettings } = require('../../utils/createDefaultNotification');
 
-console.log('JWTSECRET:', process.env.JWT_SECRET);
-
 // JWT 생성 함수
 const createJWT = (user) => {
     return jwt.sign(
@@ -93,7 +91,7 @@ router.get('/oauth/kakao/callback', async (req, res) => {
 
         const user = await findOrCreateUser(userData);
 
-        // ✅ 로그인 시 알림 설정 초기화
+        // 로그인 시 알림 설정 초기화
         await ensureNotificationSettings(user.id, user.role);
 
         const token = createJWT(user);
@@ -142,7 +140,7 @@ router.get('/oauth/naver/callback', async (req, res) => {
 
         const user = await findOrCreateUser(userData);
 
-        // ✅ 로그인 시 알림 설정 초기화
+        // 로그인 시 알림 설정 초기화
         await ensureNotificationSettings(user.id, user.role);
 
         const token = createJWT(user);

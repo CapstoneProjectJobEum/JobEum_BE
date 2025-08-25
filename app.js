@@ -50,8 +50,8 @@ const applicationsRouter = require('./routes/User/applications');
 const userActivityRouter = require('./routes/User/userActivity');
 
 // ===== Notifications (REST + socket.io) =====
-const notificationRouter = require('./routes/Notification/notification'); // ← 알림 REST
-const { runFavoriteDeadlineJob } = require('./routes/Jobs/notifyFavoriteJobDeadline'); // ← D-7/D-1/D-0
+const notificationRouter = require('./routes/Notification/notification');
+const { runFavoriteDeadlineJob } = require('./routes/Jobs/notifyFavoriteJobDeadline');
 const { runCompanyDeadlineJob } = require('./routes/Jobs/notifyCompanyJobDeadline');
 
 // ===== socket.io 준비 =====
@@ -123,7 +123,6 @@ io.use((socket, next) => {
   if (!token) return next(new Error('no token'));
   try {
     const payload = jwt.verify(token, process.env.JWT_SECRET);
-    // 로그인 시 발급한 JWT 페이로드 키에 맞춰주세요 (예: payload.id / payload.userId)
     socket.user = { id: payload.id };
     return next();
   } catch {
@@ -134,10 +133,10 @@ io.use((socket, next) => {
 // 유저별 룸 입장
 io.on('connection', (socket) => {
   socket.join(`user:${socket.user.id}`);
-  console.log('[socket] connected user:', socket.user.id);
+  console.log(`[소켓] 사용자 접속: ID=${socket.user.id}`);
 
   socket.on('disconnect', () => {
-    console.log('[socket] disconnected user:', socket.user.id);
+    console.log(`[소켓] 사용자 접속 종료: ID=${socket.user.id}`);
   });
 });
 
@@ -153,9 +152,9 @@ cron.schedule('0 0 * * *', async () => {
       WHERE STR_TO_DATE(deadline, '%Y-%m-%d') < CURDATE()
         AND status = 'active'
     `);
-    console.log('마감된 공고 자동 비활성화 실행됨');
+    console.log('[CRON] 마감 공고 자동 비활성화 완료');
   } catch (err) {
-    console.error('자동 비활성화 오류:', err.message);
+    console.error('[CRON] 자동 비활성화 오류:', err.message);
   }
 }, { timezone: 'Asia/Seoul' });
 
@@ -164,20 +163,20 @@ cron.schedule('0 9 * * *', async () => {
   try {
     const io = app.get('io');
     await runFavoriteDeadlineJob(io);
-    console.log('관심 공고 마감 임박 알림 전송 완료');
+    console.log('[CRON] 관심 공고 마감 임박 알림 전송 완료');
   } catch (e) {
-    console.error('[cron] error', e);
+    console.error('[CRON] 관심 공고 알림 오류:', e);
   }
 }, { timezone: 'Asia/Seoul' });
 
-// ===== CRON 3) 09:00: 공고 마감 임박 알림(D-7/D-1/D-0)(기업) =====
-cron.schedule('2 9 * * *', async () => {  // 09:02 KST
+// ===== CRON 3) 09:02: 기업 공고 마감 임박 알림(D-7/D-1/D-0)(기업) =====
+cron.schedule('2 9 * * *', async () => {
   try {
     const io = app.get('io');
     await runCompanyDeadlineJob(io);
-    console.log('등록 공고 마감 임박 알림 전송 완료');
+    console.log('[CRON] 기업 공고 마감 임박 알림 전송 완료');
   } catch (e) {
-    console.error('[cron] company deadline error', e);
+    console.error('[CRON] 기업 공고 알림 오류:', e);
   }
 }, { timezone: 'Asia/Seoul' });
 
@@ -185,6 +184,6 @@ cron.schedule('2 9 * * *', async () => {  // 09:02 KST
 const PORT = process.env.PORT || 4000;
 createAdminIfNotExists().then(() => {
   server.listen(PORT, '0.0.0.0', () => {
-    console.log(`서버가 ${PORT}번 포트에서 실행 중입니다.`);
+    console.log(`[서버] ${PORT}번 포트에서 실행 중`);
   });
 });

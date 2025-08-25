@@ -30,7 +30,7 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    // ✅ 로그인 성공 직후 알림 설정 보장
+    // 로그인 성공 직후 알림 설정 보장
     await ensureNotificationSettings(user.id, user.role);
 
     // JWT payload에 role 추가
