@@ -1,7 +1,7 @@
 const router = require('express').Router();
 const db = require('../../db');
 
-// POST /api/category
+
 router.post('/', async (req, res) => {
     const filters = req.body;
 
@@ -15,7 +15,6 @@ router.post('/', async (req, res) => {
 
         Object.entries(filters).forEach(([key, value]) => {
             if (Array.isArray(value) && value.length > 0) {
-                // 같은 key 내부 값은 OR
                 const orConditions = value.map(v => {
                     params.push(v);
                     return `JSON_CONTAINS(jp.filters->'$.${key}', JSON_QUOTE(?))`;

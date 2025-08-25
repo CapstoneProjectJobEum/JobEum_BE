@@ -8,7 +8,7 @@ const { createBulkNotifications } = require('../Services/notificationService');
 // multer 설정: uploads 폴더에 파일 저장
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, 'uploads/'); // 폴더가 서버 루트에 있어야 함
+    cb(null, 'uploads/');
   },
   filename: (req, file, cb) => {
     const ext = path.extname(file.originalname);
@@ -37,13 +37,12 @@ const safeStringify = (input) => {
 };
 
 
-// "YYYYMMDD" → "YYYY-MM-DD" 포맷 변환
 const formatDeadline = (dateStr) => {
   if (!dateStr || dateStr.length !== 8) return dateStr;
   return `${dateStr.slice(0, 4)}-${dateStr.slice(4, 6)}-${dateStr.slice(6, 8)}`;
 };
 
-// 필수값 검사
+
 const validateJobPayload = (body) => {
   const required = ['title', 'company', 'location', 'deadline', 'detail', 'summary'];
   const missing = required.filter(k => !String(body[k] ?? '').trim());
@@ -131,10 +130,10 @@ router.post('/', async (req, res) => {
     title, company, location, deadline,
     detail, summary,
     working_conditions,
-    disability_requirements, // array|null (하위호환)
-    images,                  // array|null
-    filters,                 // object|null (고용형태/지역/직무/회사유형 등)
-    personalized             // object|null (장애유형/등급/보조기기/직무관심/근무형태)
+    disability_requirements,
+    images,
+    filters,
+    personalized
   } = req.body;
 
   try {

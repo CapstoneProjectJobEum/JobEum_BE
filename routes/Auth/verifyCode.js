@@ -1,10 +1,9 @@
-//이메일 인증번호 확인 코드
 const express = require("express");
 const router = express.Router();
 const { codeStore } = require("./sendCode");
 
 router.post("/verify-code", (req, res) => {
-  console.log("📦 받은 데이터:", req.body);
+  console.log("받은 데이터:", req.body);
 
   const { email, verifyCode } = req.body;
 

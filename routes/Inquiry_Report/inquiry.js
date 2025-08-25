@@ -5,7 +5,7 @@ const { createBulkNotifications } = require('../Services/notificationService');
 
 // 문의 API
 
-// 문의 생성 (개인/기업 공통)(post)
+// 문의 생성 (개인/기업 공통)
 router.post('/', requireAuth, async (req, res) => {
     const { type = 'OTHER', title, content } = req.body;
     if (!title || !content) {
@@ -49,7 +49,7 @@ router.post('/', requireAuth, async (req, res) => {
     }
 });
 
-// 내 문의 목록 (삭제되지 않은 것만)(get)
+// 내 문의 목록 (삭제되지 않은 것만)
 router.get('/me', requireAuth, async (req, res) => {
     try {
         const [items] = await db.query(
@@ -68,7 +68,7 @@ router.get('/me', requireAuth, async (req, res) => {
     }
 });
 
-// 문의 삭제 (작성자: 앱연 상태만, 관리자: 언제나 가능)(delete)
+// 문의 삭제
 router.delete('/:id', requireAuth, async (req, res) => {
     const id = Number(req.params.id);
     try {

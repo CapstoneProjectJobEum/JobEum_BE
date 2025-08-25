@@ -20,18 +20,18 @@ router.get('/:user_id', async (req, res) => {
   }
 });
 
-// 기업 프로필 추가/수정 API (upsert)
+// 기업 프로필 추가/수정 API
 router.put('/', async (req, res) => {
   const {
     user_id,
-    company_type, // 기업 형태 추가
-    industry, // 업종
+    company_type,
+    industry,
     employees,
-    establishedAt, // 설립일
-    location, // 회사 위치
-    companyContact, // 회사 연락처
+    establishedAt,
+    location,
+    companyContact,
     homepage,
-    introduction // 회사 소개
+    introduction
   } = req.body;
 
   if (!user_id) {

@@ -28,7 +28,7 @@ const companyTransporter = nodemailer.createTransport({
 });
 
 router.post("/send-code", async (req, res) => {
-  const { email, userType } = req.body; // userType 추가: "personal" 또는 "company"
+  const { email, userType } = req.body;
 
   if (!email) return res.status(400).json({ success: false, message: "이메일을 입력하세요." });
   if (!userType || !["개인회원", "기업회원"].includes(userType))
