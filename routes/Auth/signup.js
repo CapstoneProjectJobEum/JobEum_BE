@@ -11,7 +11,7 @@ function mapUserTypeToRole(userType) {
     case '기업회원':
       return 'COMPANY';
     default:
-      return 'MEMBER'; // 기본값
+      return 'MEMBER';
   }
 }
 
@@ -50,7 +50,7 @@ router.post('/signup', async (req, res) => {
 
     const userData = {
       user_type: userType,
-      role,  // 추가된 부분
+      role,
       username,
       password: hashedPassword,
       email,

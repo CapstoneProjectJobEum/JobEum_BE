@@ -28,7 +28,18 @@ router.get('/', requireAuth, async (req, res) => {
     res.json({ success: true, total, data });
 });
 
-// 개별 알림 읽음 처리
+
+// 1. 전체 알림 읽음 처리
+router.patch('/read-all', requireAuth, async (req, res) => {
+    const userId = req.user.id;
+    const [r] = await db.query(
+        `UPDATE notifications SET is_read=1 WHERE user_id=? AND is_read=0`,
+        [userId]
+    );
+    res.json({ success: true, updated: r.affectedRows });
+});
+
+// 2. 개별 알림 읽음 처리
 router.patch('/:id/read', requireAuth, async (req, res) => {
     const userId = req.user.id;
     const id = req.params.id;
@@ -39,16 +50,7 @@ router.patch('/:id/read', requireAuth, async (req, res) => {
     res.json({ success: r.affectedRows > 0 });
 });
 
-// 전체 알림 읽음 처리
-router.patch('/read-all', requireAuth, async (req, res) => {
-    const userId = req.user.id;
-    const [r] = await db.query(
-        `UPDATE notifications SET is_read=1 WHERE user_id=? AND is_read=0`,
-        [userId]
-    );
-    res.json({ success: true, updated: r.affectedRows });
-});
-// 전체 삭제 라우트 먼저
+// 1. 전체 삭제 라우트
 router.delete('/delete-all', requireAuth, async (req, res) => {
     const userId = req.user.id;
     try {
@@ -63,7 +65,7 @@ router.delete('/delete-all', requireAuth, async (req, res) => {
     }
 });
 
-// 개별 삭제 라우트 나중
+// 2. 개별 삭제 라우트 나중
 router.delete('/:id', requireAuth, async (req, res) => {
     const userId = req.user.id;
     const id = req.params.id;
@@ -74,28 +76,7 @@ router.delete('/:id', requireAuth, async (req, res) => {
     res.json({ success: r.affectedRows > 0 });
 });
 
-
-// routes/notifications.js
-router.delete('/cancel-by-job/:jobId', requireAuth, async (req, res) => {
-    const userId = req.user.id;
-    const jobId = parseInt(req.params.jobId, 10);
-
-    try {
-        // 지원자 및 기업 알림 모두 삭제
-        const [r] = await db.query(
-            `DELETE FROM notifications
-             WHERE JSON_EXTRACT(metadata, '$.job_post_id') = ?
-               AND type IN ('APPLICATION_STATUS_UPDATE', 'EMP_APPLICATION_RECEIVED')`,
-            [jobId]
-        );
-
-        res.json({ success: true, deleted: r.affectedRows });
-    } catch (err) {
-        console.error('[DELETE /notifications/cancel-by-job/:jobId]', err);
-        res.status(500).json({ success: false, message: err.message });
-    }
-});
-// routes/notifications.js
+// 지원서 취소 시 삭제
 router.delete('/cancel-by-job/:jobId', requireAuth, async (req, res) => {
     const userId = req.user.id;
     const jobId = parseInt(req.params.jobId, 10);
@@ -175,7 +156,7 @@ router.get('/settings', requireAuth, async (req, res) => {
     }
 });
 
-// POST: 알림 설정 저장
+// 알림 설정 저장
 router.post('/settings', requireAuth, async (req, res) => {
     try {
         const userId = req.user.id;

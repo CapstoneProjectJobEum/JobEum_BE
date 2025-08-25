@@ -19,9 +19,9 @@ router.delete('/jobs/:id', async (req, res) => {
               jp.user_id AS company_user_id,
               jp.title   AS job_title,
               jp.company AS company_name
-         FROM job_post jp
-        WHERE jp.id = ?
-        LIMIT 1`,
+            FROM job_post jp
+            WHERE jp.id = ?
+            LIMIT 1`,
             [jobId]
         );
 
@@ -29,7 +29,7 @@ router.delete('/jobs/:id', async (req, res) => {
             return res.status(404).json({ success: false, message: '채용공고가 없습니다.' });
         }
 
-        // 권한 체크 (router.use로 ADMIN만 통과하지만, 소유자 허용 로직 유지하려면 아래 조건)
+        // 권한 체크
         if (userId !== Number(job.company_user_id) && userRole !== 'ADMIN') {
             return res.status(403).json({ success: false, message: '삭제 권한이 없습니다.' });
         }
@@ -104,7 +104,7 @@ router.get('/inquiries/:id', async (req, res) => {
 // 문의 답변 작성/상태 업데이트 (PATCH 하나로 통합)
 router.patch('/inquiries/:id', async (req, res) => {
     const inquiryId = Number(req.params.id);
-    const { answer, status } = req.body; // answer와 status 모두 받을 수 있음
+    const { answer, status } = req.body;
 
     if (!answer || !answer.trim()) {
         return res.status(400).json({ success: false, message: '답변 내용을 입력해야 합니다.' });
@@ -134,12 +134,12 @@ router.patch('/inquiries/:id', async (req, res) => {
             );
 
             if (inquiry) {
-                const roles = ['MEMBER', 'COMPANY']; // MEMBER + COMPANY 모두 알림
+                const roles = ['MEMBER', 'COMPANY'];
                 for (const role of roles) {
                     await createNotification(io, {
                         userId: inquiry.user_id,
                         role,
-                        type: 'INQUIRY_REPORT_ANSWERED', // 통합 타입
+                        type: 'INQUIRY_REPORT_ANSWERED',
                         title: '문의 답변이 등록되었습니다.',
                         message: `문의 "${inquiry.title}"에 답변이 등록되었습니다.`,
                         metadata: { inquiryId }
@@ -213,7 +213,7 @@ router.get('/reports/:id', async (req, res) => {
 // 신고 답변 작성/상태 업데이트 (PATCH 하나로 통합)
 router.patch('/reports/:id', async (req, res) => {
     const reportId = Number(req.params.id);
-    const { answer, status } = req.body; // answer와 status 모두 받을 수 있음
+    const { answer, status } = req.body;
 
     if (!answer || !answer.trim()) {
         return res.status(400).json({ success: false, message: '답변 내용을 입력해야 합니다.' });
@@ -245,12 +245,12 @@ router.patch('/reports/:id', async (req, res) => {
         if (report) {
             try {
                 const io = req.app.get('io');
-                const roles = ['MEMBER', 'COMPANY']; // 알림 받을 역할
+                const roles = ['MEMBER', 'COMPANY'];
                 for (const role of roles) {
                     await createNotification(io, {
                         userId: report.reporter_user_id,
                         role,
-                        type: 'INQUIRY_REPORT_ANSWERED', // 통합 타입
+                        type: 'INQUIRY_REPORT_ANSWERED',
                         title: '신고 답변이 등록되었습니다.',
                         message: '신고에 답변이 등록되었습니다.',
                         metadata: { reportId }

@@ -1,5 +1,3 @@
-// routes/resetPassword.js
-
 const express = require('express');
 const router = express.Router();
 const db = require('../../db');
@@ -14,7 +12,7 @@ function authMiddleware(req, res, next) {
   const token = authHeader.split(' ')[1];
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded;  // 예: { id: 123, username: 'user1', iat: ~ }
+    req.user = decoded;
     next();
   } catch (err) {
     return res.status(401).json({ success: false, message: "유효하지 않은 토큰입니다." });

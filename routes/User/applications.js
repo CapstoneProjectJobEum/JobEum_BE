@@ -1,8 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const db = require('../../db'); // MySQL 연결
+const db = require('../../db');
 
-// 알림 서비스 (DB 저장 + 실시간 소켓 전송)
 const { createNotification } = require('../Services/notificationService');
 
 // 개인회원 - 지원하기 (+ 지원 접수 알림) + 기업회원 - 새 지원서 접수 알림
@@ -28,7 +27,7 @@ router.post('/apply', async (req, res) => {
 
         // 지원 접수 알림 트리거(개인회원) 
         try {
-            const io = req.app.get('io'); // app.js에서 app.set('io', io) 필요
+            const io = req.app.get('io');
             const [[job]] = await db.query(
                 `SELECT title AS job_title, company AS company_name 
            FROM job_post 
@@ -44,7 +43,7 @@ router.post('/apply', async (req, res) => {
                 title: '지원 접수 완료',
                 message: `[${job?.company_name ?? '회사'}] '${job?.job_title ?? '공고'}' 지원이 접수되었습니다.`,
                 metadata: { job_post_id: job_id, status: '지원완료' },
-                force: true, // ← 설정 무시하고 무조건 전송
+                force: true, // 알림 설정 무시하고 무조건 전송
             });
         } catch (notifyErr) {
             console.error('[notify] apply submit notification error:', notifyErr);
@@ -63,7 +62,7 @@ router.post('/apply', async (req, res) => {
 
             if (owner) {
                 await createNotification(io, {
-                    userId: owner.company_user_id, // 기업회원 user_id
+                    userId: owner.company_user_id,
                     role: 'COMPANY',
                     type: 'EMP_APPLICATION_RECEIVED',
                     title: '새 지원서 접수',
@@ -215,7 +214,7 @@ router.put('/status', async (req, res) => {
         // 3) 실시간 + DB 알림 트리거
         if (info) {
             try {
-                const io = req.app.get('io'); // app.js에 app.set('io', io) 필요
+                const io = req.app.get('io');
                 await createNotification(io, {
                     userId: info.user_id,
                     role: 'MEMBER',
@@ -226,7 +225,6 @@ router.put('/status', async (req, res) => {
                 });
             } catch (notifyErr) {
                 console.error('[notify] status change notification error:', notifyErr);
-                // 알림 실패는 상태변경 자체를 롤백하지 않음
             }
         }
 
@@ -259,10 +257,10 @@ router.get('/all', async (req, res) => {
     }
 });
 
-// 개별 공고 지원 상태 조회 (JobCard용)
+// 개별 공고 지원 상태 조회
 router.get('/status/:job_id', async (req, res) => {
     const { job_id } = req.params;
-    const user_id = req.user?.id; // attachUser 미들웨어가 req.user 주입
+    const user_id = req.user?.id;
 
     try {
         const [rows] = await db.query(
@@ -285,9 +283,7 @@ router.get('/status/:job_id', async (req, res) => {
 });
 
 
-
-//알림에서 넘어오는 이력서 조회
-// GET /api/applications/find-by-keys
+// 알림에서 넘어오는 이력서 조회(해당 라우트는 항상 동적 경로(:id)보다 먼저 위치해야 함)
 router.get('/find-by-keys', async (req, res) => {
     try {
         const { resumeId, jobPostId, applicantUserId } = req.query;
@@ -295,7 +291,6 @@ router.get('/find-by-keys', async (req, res) => {
             return res.status(400).json({ error: 'resumeId, jobPostId, applicantUserId 모두 필요합니다.' });
         }
 
-        // DB 조회 (숫자형 변환)
         const [rows] = await db.query(
             `SELECT id 
              FROM applications 
@@ -316,8 +311,7 @@ router.get('/find-by-keys', async (req, res) => {
 });
 
 
-
-// 개인회원 / 기업회원 - 단일 지원서 조회 (상세 화면용)
+// 개인회원 / 기업회원 - 단일 지원서 조회 (상세 화면용) (해당 라우트는 항상 '/find-by-keys' 뒤에 위치해야 함)
 router.get('/:id', async (req, res) => {
     try {
 

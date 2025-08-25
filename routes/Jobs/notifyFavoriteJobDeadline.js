@@ -1,7 +1,7 @@
 const db = require('../../db');
 const { createBulkNotifications } = require('../Services/notificationService');
 
-// 날짜 문자열 계산 (YYYY-MM-DD)
+// 날짜 문자열 계산
 function formatDate(date) {
     const yyyy = date.getFullYear();
     const mm = String(date.getMonth() + 1).padStart(2, '0');
