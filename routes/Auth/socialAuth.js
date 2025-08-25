@@ -4,13 +4,14 @@ const axios = require('axios');
 const jwt = require('jsonwebtoken');
 const pool = require('../../db');
 require('dotenv').config();
+const { ensureNotificationSettings } = require('../../utils/createDefaultNotification');
 
 console.log('JWTSECRET:', process.env.JWT_SECRET);
 
 // JWT 생성 함수
 const createJWT = (user) => {
     return jwt.sign(
-        { id: user.id, email: user.email, user_type: user.user_type },
+        { id: user.id, email: user.email, user_type: user.user_type, role: user.role },
         process.env.JWT_SECRET,
         { expiresIn: '30d' }
     );
@@ -19,21 +20,15 @@ const createJWT = (user) => {
 const mapGender = (gender) => {
     if (!gender) return null;
     const g = gender.toLowerCase();
-
     if (g === 'male' || g === 'm') return '남자';
     if (g === 'female' || g === 'f') return '여자';
-
     return null;
 };
 
-
 const formatPhoneNumber = (raw) => {
     if (!raw) return null;
-    let digits = raw.replace(/[^0-9]/g, ''); // 숫자만 추출
-    // +82 시작이면 0으로 바꾸기
-    if (digits.startsWith('82')) {
-        digits = '0' + digits.slice(2);
-    }
+    let digits = raw.replace(/[^0-9]/g, '');
+    if (digits.startsWith('82')) digits = '0' + digits.slice(2);
     return digits;
 };
 
@@ -41,7 +36,6 @@ const formatPhoneNumber = (raw) => {
 const findOrCreateUser = async (userData) => {
     const conn = await pool.getConnection();
     try {
-        // sns_id와 sns_provider로 사용자 찾기
         const [rows] = await conn.query(
             'SELECT * FROM users WHERE sns_id = ? AND sns_provider = ?',
             [userData.sns_id, userData.sns_provider]
@@ -87,7 +81,7 @@ router.get('/oauth/kakao/callback', async (req, res) => {
         const kakao = userRes.data.kakao_account;
         const userData = {
             sns_id: userRes.data.id.toString(),
-            sns_provider: 'kakao',  // 여기 추가
+            sns_provider: 'kakao',
             name: kakao.name,
             email: kakao.email,
             gender: mapGender(kakao.gender),
@@ -98,8 +92,11 @@ router.get('/oauth/kakao/callback', async (req, res) => {
         };
 
         const user = await findOrCreateUser(userData);
-        const token = createJWT(user);
 
+        // ✅ 로그인 시 알림 설정 초기화
+        await ensureNotificationSettings(user.id, user.role);
+
+        const token = createJWT(user);
         res.json({ user, token });
     } catch (err) {
         console.error('카카오 로그인 에러:', err);
@@ -131,10 +128,9 @@ router.get('/oauth/naver/callback', async (req, res) => {
         });
 
         const profile = userRes.data.response;
-
         const userData = {
             sns_id: profile.id,
-            sns_provider: 'naver',  // 여기 추가
+            sns_provider: 'naver',
             name: profile.name,
             email: profile.email,
             gender: mapGender(profile.gender),
@@ -145,8 +141,11 @@ router.get('/oauth/naver/callback', async (req, res) => {
         };
 
         const user = await findOrCreateUser(userData);
-        const token = createJWT(user);
 
+        // ✅ 로그인 시 알림 설정 초기화
+        await ensureNotificationSettings(user.id, user.role);
+
+        const token = createJWT(user);
         res.json({ user, token });
     } catch (err) {
         console.error('네이버 로그인 에러:', err);
