@@ -18,21 +18,28 @@ router.post('/apply', async (req, res) => {
             return res.status(400).json({ message: '이미 지원한 이력서입니다.' });
         }
 
+        // job_post에서 회사(user_id) 조회
+        const [[job]] = await db.query(
+            `SELECT user_id AS company_user_id FROM job_post WHERE id = ? LIMIT 1`,
+            [job_id]
+        );
+        if (!job) return res.status(404).json({ message: '존재하지 않는 공고입니다.' });
+
         // 기본 상태 '지원됨'으로 지원 등록
         await db.query(
-            `INSERT INTO applications (user_id, job_id, resume_id, status, is_viewed) 
-       VALUES (?, ?, ?, '지원됨', 0)`,
-            [user_id, job_id, resume_id]
+            `INSERT INTO applications (user_id, job_id, resume_id, company_id, status, is_viewed) 
+             VALUES (?, ?, ?, ?, '지원됨', 0)`,
+            [user_id, job_id, resume_id, job.company_user_id]
         );
 
         // 지원 접수 알림 트리거(개인회원) 
         try {
             const io = req.app.get('io');
-            const [[job]] = await db.query(
+            const [[jobInfo]] = await db.query(
                 `SELECT title AS job_title, company AS company_name 
-           FROM job_post 
-          WHERE id = ? 
-          LIMIT 1`,
+                 FROM job_post 
+                 WHERE id = ? 
+                 LIMIT 1`,
                 [job_id]
             );
 
@@ -41,9 +48,9 @@ router.post('/apply', async (req, res) => {
                 role: 'MEMBER',
                 type: 'APPLICATION_STATUS_UPDATE',
                 title: '지원 접수 완료',
-                message: `[${job?.company_name ?? '회사'}] '${job?.job_title ?? '공고'}' 지원이 접수되었습니다.`,
+                message: `[${jobInfo?.company_name ?? '회사'}] '${jobInfo?.job_title ?? '공고'}' 지원이 접수되었습니다.`,
                 metadata: { job_post_id: job_id, status: '지원완료' },
-                force: true, // 알림 설정 무시하고 무조건 전송
+                force: true,
             });
         } catch (notifyErr) {
             console.error('[notify] apply submit notification error:', notifyErr);
@@ -54,9 +61,9 @@ router.post('/apply', async (req, res) => {
             const io = req.app.get('io');
             const [[owner]] = await db.query(
                 `SELECT jp.user_id AS company_user_id, jp.title AS job_title, jp.company AS company_name
-           FROM job_post jp
-          WHERE jp.id = ?
-          LIMIT 1`,
+                 FROM job_post jp
+                 WHERE jp.id = ?
+                 LIMIT 1`,
                 [job_id]
             );
 
@@ -80,6 +87,7 @@ router.post('/apply', async (req, res) => {
         res.status(500).json({ message: '지원 처리 중 오류 발생' });
     }
 });
+
 
 // 개인회원 - 지원취소
 router.delete('/cancel/:applicationId', async (req, res) => {
@@ -134,9 +142,9 @@ router.put('/view/:applicationId', async (req, res) => {
         // 1) 상태 열람 처리 + '서류 심사중'으로 변경
         const [result] = await db.query(
             `UPDATE applications 
-             SET is_viewed = 1, status = '서류 심사중' 
-             WHERE id = ?`,
-            [applicationId]
+            SET is_viewed = 1, status = '서류 심사중' 
+            WHERE id = ? AND company_id = ?`,
+            [applicationId, req.user.id]
         );
 
         if (result.affectedRows === 0) {
@@ -189,9 +197,9 @@ router.put('/status', async (req, res) => {
         // 1) 상태 업데이트
         const [result] = await db.query(
             `UPDATE applications 
-          SET status = ? 
-        WHERE user_id = ? AND resume_id = ? AND job_id = ?`,
-            [status, user_id, resume_id, job_id]
+            SET status = ? 
+            WHERE user_id = ? AND resume_id = ? AND job_id = ? AND company_id = ?`,
+            [status, user_id, resume_id, job_id, req.user.id]  // 로그인한 기업회원 id
         );
 
         if (result.affectedRows === 0) {
@@ -240,15 +248,18 @@ router.get('/all', async (req, res) => {
     try {
         const [rows] = await db.query(
             `SELECT a.id, a.user_id, u.name as applicant_name, 
-              a.job_id, j.title as job_title, j.deadline,
-              a.resume_id, r.title as resume_title, 
-              a.status, a.is_viewed, a.applied_at
-         FROM applications a
-         JOIN users   u ON a.user_id = u.id
-         JOIN job_post j ON a.job_id = j.id
-         JOIN resumes r ON a.resume_id = r.id
-        ORDER BY a.applied_at DESC`
+            a.job_id, j.title as job_title, j.deadline,
+            a.resume_id, r.title as resume_title, 
+            a.status, a.is_viewed, a.applied_at
+            FROM applications a
+            JOIN users   u ON a.user_id = u.id
+            JOIN job_post j ON a.job_id = j.id
+            JOIN resumes r ON a.resume_id = r.id
+            WHERE a.company_id = ?
+            ORDER BY a.applied_at DESC`,
+            [req.user.id]
         );
+
 
         res.json(rows);
     } catch (err) {
@@ -314,16 +325,14 @@ router.get('/find-by-keys', async (req, res) => {
 // 개인회원 / 기업회원 - 단일 지원서 조회 (상세 화면용) (해당 라우트는 항상 '/find-by-keys' 뒤에 위치해야 함)
 router.get('/:id', async (req, res) => {
     try {
-
         const { id } = req.params;
 
         const [rows] = await db.query(
-            `SELECT a.id, a.job_id, a.resume_id, a.status, a.user_id,
-              r.*
-         FROM applications a
-         JOIN resumes r ON a.resume_id = r.id
-        WHERE a.id = ?`,
-            [id]
+            `SELECT a.id, a.job_id, a.resume_id, a.status, a.user_id, a.is_viewed, r.*
+            FROM applications a
+            JOIN resumes r ON a.resume_id = r.id
+            WHERE a.id = ? AND (a.user_id = ? OR a.company_id = ?)`,
+            [id, req.user.id, req.user.id]
         );
 
         if (!rows[0]) {
@@ -336,6 +345,7 @@ router.get('/:id', async (req, res) => {
         res.status(500).json({ message: '지원서 조회 중 오류 발생' });
     }
 });
+
 
 
 module.exports = router;
