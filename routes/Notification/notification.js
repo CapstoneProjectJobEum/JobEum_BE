@@ -77,25 +77,51 @@ router.delete('/:id', requireAuth, async (req, res) => {
 });
 
 // 지원서 취소 시 삭제
-router.delete('/cancel-by-job/:jobId', requireAuth, async (req, res) => {
-    const userId = req.user.id;
-    const jobId = parseInt(req.params.jobId, 10);
+router.delete('/cancel-by-job/:targetId', requireAuth, async (req, res) => {
 
+    const targetId = parseInt(req.params.targetId, 10);
     try {
         // 지원자 및 기업 알림 모두 삭제
         const [r] = await db.query(
             `DELETE FROM notifications
              WHERE JSON_EXTRACT(metadata, '$.job_post_id') = ?
                AND type IN ('APPLICATION_STATUS_UPDATE', 'EMP_APPLICATION_RECEIVED')`,
-            [jobId]
+            [targetId]
         );
 
         res.json({ success: true, deleted: r.affectedRows });
     } catch (err) {
-        console.error('[DELETE /notifications/cancel-by-job/:jobId]', err);
+        console.error('[DELETE /notifications/cancel-by-job/:targetId]', err);
         res.status(500).json({ success: false, message: err.message });
     }
 });
+
+// 문의, 신고 내역 삭제 시 삭제
+router.delete('/cancel-by-inquiry-and-report/:id', requireAuth, async (req, res) => {
+    const targetId = parseInt(req.params.id, 10);
+
+    try {
+        // 관련 알림 삭제 (문의 / 신고 모두)
+        const [r] = await db.query(
+            `DELETE FROM notifications
+            WHERE (
+             JSON_EXTRACT(metadata, '$.inquiry_id') = ?
+            OR JSON_EXTRACT(metadata, '$.report_id') = ?
+            OR JSON_EXTRACT(metadata, '$.inquiryId') = ?
+            OR JSON_EXTRACT(metadata, '$.reportId') = ?
+            )
+            AND type IN ('ADMIN_INQUIRY_CREATED', 'ADMIN_REPORT_CREATED', 'INQUIRY_REPORT_ANSWERED')`,
+            [targetId, targetId, targetId, targetId]
+        );
+
+
+        res.json({ success: true, deleted: r.affectedRows });
+    } catch (err) {
+        console.error('[DELETE /notifications/cancel-by-inquiry-and-report/:id]', err);
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
 
 
 // ==================== 알림 설정 API ====================

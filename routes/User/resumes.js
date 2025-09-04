@@ -98,12 +98,25 @@ router.put('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
     try {
         const id = req.params.id;
-        await db.query('DELETE FROM resumes WHERE id=?', [id]);
+
+        const [rows] = await db.query(
+            'SELECT COUNT(*) AS count FROM applications WHERE resume_id = ?',
+            [id]
+        );
+        const applicationCount = rows[0].count;
+
+        if (applicationCount > 0) {
+            return res.status(400).json({ success: false });
+        }
+        await db.query('DELETE FROM resumes WHERE id = ?', [id]);
+
         res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('이력서 삭제 오류:', err);
+        res.status(500).json({ success: false });
     }
 });
+
 
 // 6. 기본 이력서 설정
 router.put('/:id/default', async (req, res) => {

@@ -105,12 +105,8 @@ router.delete('/:id', requireAuth, async (req, res) => {
         if (!row) return res.status(404).json({ success: false, message: 'Not found' });
 
         const isOwner = row.reporter_user_id === req.user.id;
-        const isAdmin = req.user.role === 'ADMIN';
-        if (!isOwner && !isAdmin) {
+        if (!isOwner) {
             return res.status(403).json({ success: false, message: 'Forbidden' });
-        }
-        if (!isAdmin && row.status !== 'OPEN') {
-            return res.status(409).json({ success: false, message: '처리 중/완료는 삭제 불가' });
         }
 
         await db.query(
