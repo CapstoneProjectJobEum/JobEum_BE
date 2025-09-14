@@ -37,7 +37,7 @@ router.post('/', async (req, res) => {
 
         const [rows] = await db.query(
             `
-            SELECT jp.id, jp.title, jp.company, jp.location, jp.detail, jp.summary, jp.deadline, jp.created_at,
+            SELECT jp.id, jp.title, jp.company, jp.location, jp.detail, jp.preferred_skills, jp.deadline, jp.created_at,
                    jp.filters, jp.personalized
             FROM job_post jp
             ${whereClause}

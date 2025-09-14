@@ -63,7 +63,30 @@ router.post('/', async (req, res) => {
     }
 });
 
-// 4. 기존 이력서 수정
+// 4. 지원 내역 확인
+router.get('/:id/check-application', async (req, res) => {
+    try {
+        const id = req.params.id;
+
+        const [rows] = await db.query(
+            'SELECT COUNT(*) AS count FROM applications WHERE resume_id = ?',
+            [id]
+        );
+        const applicationCount = rows[0].count;
+
+        if (applicationCount > 0) {
+            return res.status(400).json({ success: false });
+        }
+
+        res.json({ success: true });
+
+    } catch (err) {
+        console.error('이력서 지원 내역 체크 오류:', err);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// 5. 기존 이력서 수정
 router.put('/:id', async (req, res) => {
     try {
         const id = req.params.id;
@@ -94,7 +117,7 @@ router.put('/:id', async (req, res) => {
     }
 });
 
-// 5. 이력서 삭제
+// 6. 이력서 삭제
 router.delete('/:id', async (req, res) => {
     try {
         const id = req.params.id;
@@ -118,7 +141,7 @@ router.delete('/:id', async (req, res) => {
 });
 
 
-// 6. 기본 이력서 설정
+// 7. 기본 이력서 설정
 router.put('/:id/default', async (req, res) => {
     try {
         const id = req.params.id;

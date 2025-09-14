@@ -44,7 +44,7 @@ const formatDeadline = (dateStr) => {
 
 
 const validateJobPayload = (body) => {
-  const required = ['title', 'company', 'location', 'deadline', 'detail', 'summary'];
+  const required = ['title', 'company', 'location', 'deadline', 'detail', 'preferred_skills'];
   const missing = required.filter(k => !String(body[k] ?? '').trim());
   if (missing.length) return `필수값 누락: ${missing.join(', ')}`;
   return null;
@@ -128,7 +128,7 @@ router.post('/', async (req, res) => {
   const {
     user_id,
     title, company, location, deadline,
-    detail, summary,
+    detail, preferred_skills,
     working_conditions,
     disability_requirements,
     images,
@@ -145,13 +145,13 @@ router.post('/', async (req, res) => {
 
     const [result] = await db.query(`
       INSERT INTO job_post
-      (user_id, title, company, location, deadline, detail, summary,
+      (user_id, title, company, location, deadline, detail, preferred_skills,
        working_conditions, disability_requirements, images, filters, personalized)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, [
       user_id,
       title, company, location, deadline,
-      detail, summary,
+      detail, preferred_skills,
       working_conditions || null,
       safeStringify(effectiveDisabilityReq),
       safeStringify(images),
@@ -202,7 +202,7 @@ router.put('/:id', async (req, res) => {
 
   const {
     title, company, location, deadline,
-    detail, summary,
+    detail, preferred_skills,
     working_conditions,
     disability_requirements,
     images,
@@ -220,7 +220,7 @@ router.put('/:id', async (req, res) => {
 
   try {
     const err = validateJobPayload({
-      title, company, location, deadline, detail, summary
+      title, company, location, deadline, detail, preferred_skills
     });
     if (err) return res.status(400).json({ success: false, message: err });
 
@@ -229,12 +229,12 @@ router.put('/:id', async (req, res) => {
     const [result] = await db.query(
       `UPDATE job_post
          SET title=?, company=?, location=?, deadline=?, 
-             detail=?, summary=?, working_conditions=?,
+             detail=?, preferred_skills=?, working_conditions=?,
              disability_requirements=?, images=?, filters=?, personalized=?
        WHERE id=?`,
       [
         title, company, location, deadline,
-        detail, summary,
+        detail, preferred_skills,
         working_conditions || null,
         safeStringify(effectiveDisabilityReq),
         safeStringify(images),

@@ -27,6 +27,7 @@ const categoryRouter = require('./routes/Category/category');
 // ===== Common =====
 const accountInfoRouter = require('./routes/Common/accountInfo');
 const jobRouter = require('./routes/Common/job');
+const { router: jobSummaryRouter, createSummaryForJob } = require('./routes/Common/jobSummary');
 
 // ===== Company =====
 const companyRoutes = require('./routes/Company/company');
@@ -90,6 +91,7 @@ app.use('/api/category', categoryRouter);
 // Common
 app.use('/api/account-info', requireAuth, accountInfoRouter);
 app.use('/api/jobs', jobRouter);
+app.use('/api/jobs', requireAuth, jobSummaryRouter);
 
 // Company
 app.use('/api/companies', requireAuth, companyRoutes);
@@ -180,10 +182,42 @@ cron.schedule('2 9 * * *', async () => {
   }
 }, { timezone: 'Asia/Seoul' });
 
+// // ===== 서버 기동 =====
+// const PORT = process.env.PORT || 4000;
+// createAdminIfNotExists().then(() => {
+//   server.listen(PORT, '0.0.0.0', () => {
+//     console.log(`[서버] ${PORT}번 포트에서 실행 중`);
+//   });
+// });
+
 // ===== 서버 기동 =====
 const PORT = process.env.PORT || 4000;
+
+// **새로 추가할 함수**: 아직 요약되지 않은 공고를 찾아 요약본을 생성하고 저장
+const runAutomaticSummary = async () => {
+  try {
+    // **수정된 쿼리**: job_summaries 테이블에 없는 공고 ID를 찾음
+    const [jobsToSummarize] = await db.query(`
+      SELECT id FROM job_post
+      WHERE id NOT IN (SELECT job_post_id FROM job_summaries)
+    `);
+
+    console.log(`[자동 요약] 총 ${jobsToSummarize.length}개의 요약되지 않은 공고를 찾았습니다.`);
+
+    for (const job of jobsToSummarize) {
+      await createSummaryForJob(job.id);
+    }
+
+    console.log('[자동 요약] 모든 요약 작업이 완료되었습니다.');
+  } catch (err) {
+    console.error('[자동 요약] 오류:', err);
+  }
+};
+
 createAdminIfNotExists().then(() => {
-  server.listen(PORT, '0.0.0.0', () => {
+  server.listen(PORT, '0.0.0.0', async () => {
     console.log(`[서버] ${PORT}번 포트에서 실행 중`);
+    // 서버가 실행된 후 자동 요약 함수를 호출
+    await runAutomaticSummary();
   });
 });

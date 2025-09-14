@@ -11,11 +11,11 @@ router.get('/', async (req, res) => {
     try {
         const [rows] = await db.query(
             `
-            SELECT jp.id, jp.title, jp.company, jp.location, jp.detail, jp.summary, jp.deadline, jp.created_at,
+            SELECT jp.id, jp.title, jp.company, jp.location, jp.detail, jp.preferred_skills, jp.deadline, jp.created_at,
                    jp.filters, jp.personalized
             FROM job_post jp
             WHERE CONCAT_WS(' ',
-                jp.title, jp.company, jp.detail, jp.summary,
+                jp.title, jp.company, jp.detail, jp.preferred_skills,
                 COALESCE(JSON_UNQUOTE(JSON_EXTRACT(jp.filters, '$.career')), ''),
                 COALESCE(JSON_UNQUOTE(JSON_EXTRACT(jp.filters, '$.education')), ''),
                 COALESCE(JSON_UNQUOTE(JSON_EXTRACT(jp.filters, '$.employmentType')), ''),
