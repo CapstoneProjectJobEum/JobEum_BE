@@ -49,6 +49,7 @@ const userProfileRouter = require('./routes/User/userProfile');
 const resumesRouter = require('./routes/User/resumes');
 const applicationsRouter = require('./routes/User/applications');
 const userActivityRouter = require('./routes/User/userActivity');
+const { router: recommendationsRouter, generateRecommendationsForUser } = require('./routes/User/recommendations');
 
 // ===== Notifications (REST + socket.io) =====
 const notificationRouter = require('./routes/Notification/notification');
@@ -109,6 +110,7 @@ app.use('/api/user-profile', requireAuth, userProfileRouter);
 app.use('/api/resumes', requireAuth, resumesRouter);
 app.use('/api/applications', requireAuth, applicationsRouter);
 app.use('/api/user-activity', requireAuth, userActivityRouter);
+app.use('/api/users', requireAuth, recommendationsRouter);
 
 // Notifications REST
 app.use('/api/notifications', notificationRouter);
@@ -213,11 +215,41 @@ const runAutomaticSummary = async () => {
     console.error('[자동 요약] 오류:', err);
   }
 };
+const runAutomaticRecommendations = async () => {
+  try {
+    // user_profile 테이블에 존재하는 사용자의 ID만 조회
+    const [users] = await db.query('SELECT user_id AS id FROM user_profile');
+
+    console.log(`[추천 생성] 총 ${users.length}명의 개인 회원에 대한 추천을 생성합니다.`);
+
+    for (const user of users) {
+      // ⚠️ 여기에 로직을 추가합니다. ⚠️
+      // user_recommendations 테이블에 해당 유저의 데이터가 있는지 확인
+      const [existingRecs] = await db.query(
+        'SELECT COUNT(*) AS count FROM user_recommendations WHERE user_id = ?',
+        [user.id]
+      );
+
+      if (existingRecs[0].count > 0) {
+        console.log(`[추천 생성] 사용자 ID ${user.id}의 추천 목록이 이미 존재합니다. 건너뜁니다.`);
+        continue; // 다음 사용자로 넘어갑니다.
+      }
+
+      await generateRecommendationsForUser(user.id);
+    }
+
+    console.log('[추천 생성] 모든 개인 회원 추천이 완료되었습니다.');
+  } catch (err) {
+    console.error('[추천 생성] 오류:', err);
+  }
+};
+
 
 createAdminIfNotExists().then(() => {
   server.listen(PORT, '0.0.0.0', async () => {
     console.log(`[서버] ${PORT}번 포트에서 실행 중`);
     // 서버가 실행된 후 자동 요약 함수를 호출
     await runAutomaticSummary();
+    await runAutomaticRecommendations();
   });
 });
