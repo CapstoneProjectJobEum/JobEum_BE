@@ -199,7 +199,6 @@ router.post('/', async (req, res) => {
 // 5. 채용공고 수정
 router.put('/:id', async (req, res) => {
   const { id } = req.params;
-
   const {
     title, company, location, deadline,
     detail, preferred_skills,
@@ -209,14 +208,6 @@ router.put('/:id', async (req, res) => {
     filters,
     personalized
   } = req.body;
-
-
-
-
-
-
-
-
 
   try {
     const err = validateJobPayload({
@@ -286,14 +277,20 @@ router.get('/recommend/:userId', async (req, res) => {
       const reqs = safeJsonParse(job.disability_requirements, {});
       const pers = safeJsonParse(job.personalized, {});
 
-
+      // 필수 조건: 장애 등급 일치 여부
       const requireGrade = pers.disabilityGrade || reqs.disabilityGrade;
       const requiredGrades = Array.isArray(requireGrade) ? requireGrade : [requireGrade];
 
       if (!requiredGrades.includes(profile.disability_grade)) return false;
 
+      // === 핵심 수정: 관심 직무가 사용자의 선택 범위 내에 있는지 확인 ===
+      const userInterest = profile.job_interest.split(',').map(s => s.trim());
+      const reqInterest = Array.isArray(pers.jobInterest) ? pers.jobInterest : (pers.jobInterest || reqs.jobInterest || []);
 
-
+      // 공고의 직무가 사용자가 선택한 직무 목록에 모두 포함되는지 확인
+      const isInterestIncluded = reqInterest.every(jobInt => userInterest.includes(jobInt));
+      if (!isInterestIncluded) return false;
+      // =============================================================
 
       let score = 0;
 
@@ -307,7 +304,7 @@ router.get('/recommend/:userId', async (req, res) => {
       const userTypes = profile.disability_types.split(',').map(s => s.trim());
       const userDevices = profile.assistive_devices.split(',').map(s => s.trim());
       const userWorkType = profile.preferred_work_type.split(',').map(s => s.trim());
-      const userInterest = profile.job_interest.split(',').map(s => s.trim());
+
 
       // 1) 장애 유형
       const reqTypes = pers.disabilityTypes || reqs.disabilityTypes;
@@ -321,9 +318,9 @@ router.get('/recommend/:userId', async (req, res) => {
       const reqWorkType = pers.preferredWorkType || reqs.preferredWorkType;
       if (hit(reqWorkType, userWorkType)) score++;
 
-      // 4) 관심 직무
-      const reqInterest = pers.jobInterest || reqs.jobInterest;
-      if (hit(reqInterest, userInterest)) score++;
+
+
+
 
 
       return score >= 2;
