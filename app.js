@@ -50,6 +50,10 @@ const resumesRouter = require('./routes/User/resumes');
 const applicationsRouter = require('./routes/User/applications');
 const userActivityRouter = require('./routes/User/userActivity');
 const { router: recommendationsRouter, generateRecommendationsForUser } = require('./routes/User/recommendations');
+const { router: resumeSummaryRouter, createSummaryForResume } = require('./routes/User/resumeSummary');
+const { router: resumeEditingSummaryRouter, createResumeEditingSummary } = require('./routes/User/resumeEditing');
+
+
 
 // ===== Notifications (REST + socket.io) =====
 const notificationRouter = require('./routes/Notification/notification');
@@ -111,6 +115,9 @@ app.use('/api/resumes', requireAuth, resumesRouter);
 app.use('/api/applications', requireAuth, applicationsRouter);
 app.use('/api/user-activity', requireAuth, userActivityRouter);
 app.use('/api/users', requireAuth, recommendationsRouter);
+app.use('/api/resumes', requireAuth, resumeSummaryRouter);
+app.use('/api/resumes', requireAuth, resumeEditingSummaryRouter);
+
 
 // Notifications REST
 app.use('/api/notifications', notificationRouter);
@@ -215,6 +222,49 @@ const runAutomaticSummary = async () => {
     console.error('[자동 요약] 오류:', err);
   }
 };
+
+// **새로 추가할 함수**: 아직 요약되지 않은 이력서를 찾아 요약본을 생성하고 저장
+const runAutomaticResumeSummary = async () => {
+  try {
+    // **수정된 쿼리**: resume_summaries 테이블에 없는 이력서 ID를 찾음
+    const [resumesToSummarize] = await db.query(`
+          SELECT id FROM resumes
+          WHERE id NOT IN (SELECT resume_id FROM resumes_summaries)
+        `);
+
+    console.log(`[자동 이력서 요약] 총 ${resumesToSummarize.length}개의 요약되지 않은 이력서를 찾았습니다.`);
+
+    for (const resume of resumesToSummarize) {
+      await createSummaryForResume(resume.id);
+    }
+
+    console.log('[자동 이력서 요약] 모든 요약 작업이 완료되었습니다.');
+  } catch (err) {
+    console.error('[자동 이력서 요약] 오류:', err);
+  }
+};
+
+// **새로 추가할 함수**: 아직 첨삭되지 않은 이력서를 찾아 첨삭 요약본을 생성하고 저장
+const runAutomaticResumeEditingSummary = async () => {
+  try {
+    // resumes_editing_summaries 테이블에 없는 이력서 ID를 찾음
+    const [resumesToEdit] = await db.query(`
+      SELECT id FROM resumes
+      WHERE id NOT IN (SELECT resume_id FROM resumes_editing_summaries)
+    `);
+
+    console.log(`[자동 자기소개서 첨삭] 총 ${resumesToEdit.length}개의 첨삭되지 않은 이력서를 찾았습니다.`);
+
+    for (const resume of resumesToEdit) {
+      await createResumeEditingSummary(resume.id);
+    }
+
+    console.log('[자동 자기소개서 첨삭] 모든 첨삭 작업이 완료되었습니다.');
+  } catch (err) {
+    console.error('[자동 자기소개서 첨삭] 오류:', err);
+  }
+};
+
 const runAutomaticRecommendations = async () => {
   try {
     // user_profile 테이블에 존재하는 사용자의 ID만 조회
@@ -250,6 +300,8 @@ createAdminIfNotExists().then(() => {
     console.log(`[서버] ${PORT}번 포트에서 실행 중`);
     // 서버가 실행된 후 자동 요약 함수를 호출
     await runAutomaticSummary();
+    await runAutomaticResumeSummary();
+    await runAutomaticResumeEditingSummary();
     await runAutomaticRecommendations();
   });
 });
