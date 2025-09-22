@@ -23,7 +23,7 @@ router.post('/', requireAuth, async (req, res) => {
         );
         const inquiryId = r.insertId;
 
-        // 2) 관리자 알림 (새 문의 등록)
+        // 2) 관리자 알림 (새 문의 접수)
         try {
             const [admins] = await db.query(`SELECT id AS admin_id FROM users WHERE role = 'ADMIN'`);
             if (admins.length) {
@@ -32,8 +32,8 @@ router.post('/', requireAuth, async (req, res) => {
                     userId: a.admin_id,
                     role: 'ADMIN',
                     type: 'ADMIN_INQUIRY_CREATED',
-                    title: '새 문의 등록',
-                    message: `새 문의가 등록되었습니다: '${title}'`,
+                    title: '새 문의 접수',
+                    message: `새 문의가 접수되었습니다: '${title}'`,
                     metadata: { inquiry_id: inquiryId, from_user_id: req.user.id, type }
                 }));
                 await createBulkNotifications(io, rows);

@@ -46,7 +46,7 @@ router.post('/', requireAuth, async (req, res) => {
         );
         const reportId = r.insertId;
 
-        // 2) 관리자 알림 (새 신고 등록)
+        // 2) 관리자 알림 (새 신고 접수)
         try {
             const [admins] = await db.query(`SELECT id AS admin_id FROM users WHERE role='ADMIN'`);
             if (admins.length) {
@@ -55,7 +55,7 @@ router.post('/', requireAuth, async (req, res) => {
                     userId: a.admin_id,
                     role: 'ADMIN',
                     type: 'ADMIN_REPORT_CREATED',
-                    title: '새 신고 등록',
+                    title: '새 신고 접수',
                     message: `새 신고가 접수되었습니다: 사유='${reason}'`,
                     metadata: {
                         report_id: reportId,
