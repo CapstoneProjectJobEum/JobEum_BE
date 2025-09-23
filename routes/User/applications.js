@@ -246,20 +246,28 @@ router.put('/status', async (req, res) => {
 // 기업회원 - 전체 지원현황 조회
 router.get('/all', async (req, res) => {
     try {
+        // 쿼리 매개변수에서 companyId를 가져옴
+        const companyId = req.query.companyId;
+
+        // companyId가 없으면 에러 반환
+        if (!companyId) {
+            return res.status(400).json({ message: '회사 ID가 필요합니다.' });
+        }
+
         const [rows] = await db.query(
             `SELECT a.id, a.user_id, u.name as applicant_name, 
             a.job_id, j.title as job_title, j.deadline,
             a.resume_id, r.title as resume_title, 
             a.status, a.is_viewed, a.applied_at
             FROM applications a
-            JOIN users   u ON a.user_id = u.id
+            JOIN users u ON a.user_id = u.id
             JOIN job_post j ON a.job_id = j.id
             JOIN resumes r ON a.resume_id = r.id
+            -- 쿼리 매개변수로 받은 companyId를 사용해 필터링
             WHERE a.company_id = ?
             ORDER BY a.applied_at DESC`,
-            [req.user.id]
+            [companyId]
         );
-
 
         res.json(rows);
     } catch (err) {

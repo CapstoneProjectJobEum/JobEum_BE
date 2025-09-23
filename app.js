@@ -32,6 +32,8 @@ const { router: jobSummaryRouter, createSummaryForJob } = require('./routes/Comm
 // ===== Company =====
 const companyRoutes = require('./routes/Company/company');
 const companyProfileRouter = require('./routes/Company/companyProfile');
+const { router: applicationRecommendationsRouter, generateApplicationRecommendations } = require('./routes/Company/applicationsRecommendations');
+
 
 // ===== Inquiry_Report =====
 const inquiryRouter = require('./routes/Inquiry_Report/inquiry');
@@ -101,6 +103,9 @@ app.use('/api/jobs', requireAuth, jobSummaryRouter);
 // Company
 app.use('/api/companies', requireAuth, companyRoutes);
 app.use('/api/company-profile', requireAuth, companyProfileRouter);
+app.use('/api/application-recommendations', requireAuth, applicationRecommendationsRouter);
+
+
 
 // Inquiry_Report
 app.use('/api/inquiries', requireAuth, inquiryRouter);
@@ -294,6 +299,35 @@ const runAutomaticRecommendations = async () => {
   }
 };
 
+const runAutomaticApplicationRecommendations = async () => {
+  try {
+    // user_profile 테이블에서 존재하는 사용자 ID 조회
+    const [users] = await db.query('SELECT user_id AS id FROM user_profile');
+
+    console.log(`[추천 생성] 총 ${users.length}명의 개인 회원에 대한 추천을 생성합니다.`);
+
+    for (const user of users) {
+      // 이미 추천이 있는지 확인
+      const [existingRecs] = await db.query(
+        'SELECT COUNT(*) AS count FROM application_recommendations WHERE user_id = ?',
+        [user.id]
+      );
+
+      if (existingRecs[0].count > 0) {
+        console.log(`[추천 생성] 사용자 ID ${user.id}의 추천 목록이 이미 존재합니다. 건너뜁니다.`);
+        continue; // 다음 사용자로 넘어감
+      }
+
+      await generateApplicationRecommendations(user.id);
+    }
+
+    console.log('[추천 생성] 모든 개인 회원 추천이 완료되었습니다.');
+  } catch (err) {
+    console.error('[추천 생성] 오류:', err);
+  }
+};
+
+
 
 createAdminIfNotExists().then(() => {
   server.listen(PORT, '0.0.0.0', async () => {
@@ -303,5 +337,6 @@ createAdminIfNotExists().then(() => {
     await runAutomaticResumeSummary();
     await runAutomaticResumeEditingSummary();
     await runAutomaticRecommendations();
+    await runAutomaticApplicationRecommendations();
   });
 });
