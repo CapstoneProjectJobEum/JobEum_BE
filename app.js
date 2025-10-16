@@ -9,6 +9,12 @@ const db = require('./db');
 const adminRouter = require('./routes/Admin/admin');
 const createAdminIfNotExists = require('./routes/Admin/createAdminIfNotExists');
 
+// ===== AI ===== 
+const { router: applicationRecommendationsRouter, generateApplicationRecommendations } = require('./routes/AI/applicationsRecommendations');
+const { router: jobRecommendationsRouter, generateRecommendationsForUser } = require('./routes/AI/jobRecommendations');
+const { router: jobSummaryRouter, createSummaryForJob } = require('./routes/AI/jobSummary');
+const { router: resumeSummaryRouter, createSummaryForResume } = require('./routes/AI/resumeSummary');
+
 // ===== Auth =====
 const checkDuplicateRoutes = require('./routes/Auth/checkDuplicate');
 const checkUserRouter = require('./routes/Auth/checkUser');
@@ -27,12 +33,10 @@ const categoryRouter = require('./routes/Category/category');
 // ===== Common =====
 const accountInfoRouter = require('./routes/Common/accountInfo');
 const jobRouter = require('./routes/Common/job');
-const { router: jobSummaryRouter, createSummaryForJob } = require('./routes/Common/jobSummary');
 
 // ===== Company =====
 const companyRoutes = require('./routes/Company/company');
 const companyProfileRouter = require('./routes/Company/companyProfile');
-const { router: applicationRecommendationsRouter, generateApplicationRecommendations } = require('./routes/Company/applicationsRecommendations');
 
 
 // ===== Inquiry_Report =====
@@ -51,11 +55,7 @@ const userProfileRouter = require('./routes/User/userProfile');
 const resumesRouter = require('./routes/User/resumes');
 const applicationsRouter = require('./routes/User/applications');
 const userActivityRouter = require('./routes/User/userActivity');
-const { router: recommendationsRouter, generateRecommendationsForUser } = require('./routes/User/recommendations');
-const { router: resumeSummaryRouter, createSummaryForResume } = require('./routes/User/resumeSummary');
 const { router: resumeEditingSummaryRouter, createResumeEditingSummary } = require('./routes/User/resumeEditing');
-
-
 
 // ===== Notifications (REST + socket.io) =====
 const notificationRouter = require('./routes/Notification/notification');
@@ -80,6 +80,12 @@ app.use(attachUser);
 // Admin
 app.use('/api/admin', requireAuth, requireRole('ADMIN'), adminRouter);
 
+// AI
+app.use('/api/application-recommendations', requireAuth, applicationRecommendationsRouter);
+app.use('/api/users', requireAuth, jobRecommendationsRouter);
+app.use('/api/jobs', requireAuth, jobSummaryRouter);
+app.use('/api/resumes', requireAuth, resumeSummaryRouter);
+
 // Auth
 app.use('/api', checkDuplicateRoutes);
 app.use('/api', checkUserRouter);
@@ -98,14 +104,10 @@ app.use('/api/category', categoryRouter);
 // Common
 app.use('/api/account-info', requireAuth, accountInfoRouter);
 app.use('/api/jobs', jobRouter);
-app.use('/api/jobs', requireAuth, jobSummaryRouter);
 
 // Company
 app.use('/api/companies', requireAuth, companyRoutes);
 app.use('/api/company-profile', requireAuth, companyProfileRouter);
-app.use('/api/application-recommendations', requireAuth, applicationRecommendationsRouter);
-
-
 
 // Inquiry_Report
 app.use('/api/inquiries', requireAuth, inquiryRouter);
@@ -119,8 +121,6 @@ app.use('/api/user-profile', requireAuth, userProfileRouter);
 app.use('/api/resumes', requireAuth, resumesRouter);
 app.use('/api/applications', requireAuth, applicationsRouter);
 app.use('/api/user-activity', requireAuth, userActivityRouter);
-app.use('/api/users', requireAuth, recommendationsRouter);
-app.use('/api/resumes', requireAuth, resumeSummaryRouter);
 app.use('/api/resumes', requireAuth, resumeEditingSummaryRouter);
 
 
@@ -196,17 +196,6 @@ cron.schedule('2 9 * * *', async () => {
   }
 }, { timezone: 'Asia/Seoul' });
 
-// // ===== 서버 기동 =====
-// const PORT = process.env.PORT || 4000;
-// createAdminIfNotExists().then(() => {
-//   server.listen(PORT, '0.0.0.0', () => {
-//     console.log(`[서버] ${PORT}번 포트에서 실행 중`);
-//   });
-// });
-
-// ===== 서버 기동 =====
-const PORT = process.env.PORT || 4000;
-
 // **새로 추가할 함수**: 아직 요약되지 않은 공고를 찾아 요약본을 생성하고 저장
 const runAutomaticSummary = async () => {
   try {
@@ -278,7 +267,6 @@ const runAutomaticRecommendations = async () => {
     console.log(`[추천 생성] 총 ${users.length}명의 개인 회원에 대한 추천을 생성합니다.`);
 
     for (const user of users) {
-      // ⚠️ 여기에 로직을 추가합니다. ⚠️
       // user_recommendations 테이블에 해당 유저의 데이터가 있는지 확인
       const [existingRecs] = await db.query(
         'SELECT COUNT(*) AS count FROM user_recommendations WHERE user_id = ?',
@@ -327,7 +315,8 @@ const runAutomaticApplicationRecommendations = async () => {
   }
 };
 
-
+// ===== 서버 기동 =====
+const PORT = process.env.PORT || 4000;
 
 createAdminIfNotExists().then(() => {
   server.listen(PORT, '0.0.0.0', async () => {
