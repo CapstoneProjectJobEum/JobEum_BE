@@ -42,6 +42,7 @@ const createResumeEditingSummary = async (resumeId) => {
 
         // summaryFull 생성
         const fullPrompt = `
+       
         다음 자기소개서를 읽고 개선하면 좋을 점과 개선 포인트를 3~5문장으로 요약해 주세요.
         - 불필요한 서론/결론은 제거
         - 문장 구조와 표현을 자연스럽게 다듬는 방법 제안
@@ -78,7 +79,7 @@ const createResumeEditingSummary = async (resumeId) => {
 };
 
 // POST 엔드포인트
-router.post('/editing', async (req, res) => {
+router.post('/', async (req, res) => {
     const { id } = req.body;
     if (!id) return res.status(400).json({ success: false, message: "이력서 ID가 필요합니다." });
 
@@ -91,7 +92,7 @@ router.post('/editing', async (req, res) => {
 });
 
 // GET 엔드포인트
-router.get('/editing/resume/:resumeId', async (req, res) => {
+router.get('/resume/:resumeId', async (req, res) => {
     const resumeId = req.params.resumeId;
     if (!resumeId) return res.status(400).json({ success: false, message: "resumeId가 필요합니다." });
 

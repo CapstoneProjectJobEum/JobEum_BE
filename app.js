@@ -13,6 +13,7 @@ const createAdminIfNotExists = require('./routes/Admin/createAdminIfNotExists');
 const { router: applicationRecommendationsRouter, generateApplicationRecommendations } = require('./routes/AI/applicationsRecommendations');
 const { router: jobRecommendationsRouter, generateRecommendationsForUser } = require('./routes/AI/jobRecommendations');
 const { router: jobSummaryRouter, createSummaryForJob } = require('./routes/AI/jobSummary');
+const { router: resumeReviewSummaryRouter, createResumeReViewSummary } = require('./routes/AI/resumeReviewSummary');
 const { router: resumeSummaryRouter, createSummaryForResume } = require('./routes/AI/resumeSummary');
 
 // ===== Auth =====
@@ -55,7 +56,6 @@ const userProfileRouter = require('./routes/User/userProfile');
 const resumesRouter = require('./routes/User/resumes');
 const applicationsRouter = require('./routes/User/applications');
 const userActivityRouter = require('./routes/User/userActivity');
-const { router: resumeEditingSummaryRouter, createResumeEditingSummary } = require('./routes/User/resumeEditing');
 
 // ===== Notifications (REST + socket.io) =====
 const notificationRouter = require('./routes/Notification/notification');
@@ -83,8 +83,9 @@ app.use('/api/admin', requireAuth, requireRole('ADMIN'), adminRouter);
 // AI
 app.use('/api/application-recommendations', requireAuth, applicationRecommendationsRouter);
 app.use('/api/users', requireAuth, jobRecommendationsRouter);
-app.use('/api/jobs', requireAuth, jobSummaryRouter);
-app.use('/api/resumes', requireAuth, resumeSummaryRouter);
+app.use('/api/jobs/summary', requireAuth, jobSummaryRouter);
+app.use('/api/resumes/reviewSummary', requireAuth, resumeReviewSummaryRouter);
+app.use('/api/resumes/summary', requireAuth, resumeSummaryRouter);
 
 // Auth
 app.use('/api', checkDuplicateRoutes);
@@ -121,7 +122,6 @@ app.use('/api/user-profile', requireAuth, userProfileRouter);
 app.use('/api/resumes', requireAuth, resumesRouter);
 app.use('/api/applications', requireAuth, applicationsRouter);
 app.use('/api/user-activity', requireAuth, userActivityRouter);
-app.use('/api/resumes', requireAuth, resumeEditingSummaryRouter);
 
 
 // Notifications REST
@@ -250,7 +250,7 @@ const runAutomaticResumeEditingSummary = async () => {
     console.log(`[자동 자기소개서 첨삭] 총 ${resumesToEdit.length}개의 첨삭되지 않은 이력서를 찾았습니다.`);
 
     for (const resume of resumesToEdit) {
-      await createResumeEditingSummary(resume.id);
+      await createResumeReViewSummary(resume.id);
     }
 
     console.log('[자동 자기소개서 첨삭] 모든 첨삭 작업이 완료되었습니다.');
