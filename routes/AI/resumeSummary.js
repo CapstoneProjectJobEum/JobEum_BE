@@ -78,7 +78,7 @@ const createSummaryForResume = async (resumeId) => {
 };
 
 // **라우터**: 외부에서 요청할 때 사용 (기존 POST 엔드포인트)
-router.post('/summary', async (req, res) => {
+router.post('/', async (req, res) => {
     const { id } = req.body;
     if (!id) {
         return res.status(400).json({ success: false, message: "이력서 ID가 필요합니다." });
@@ -93,7 +93,7 @@ router.post('/summary', async (req, res) => {
 });
 
 
-router.get('/summary/resume/:resumeId', async (req, res) => {
+router.get('/resume/:resumeId', async (req, res) => {
     const resumeId = req.params.resumeId;
 
     if (!resumeId) {
