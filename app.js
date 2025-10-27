@@ -239,12 +239,12 @@ const runAutomaticResumeSummary = async () => {
 };
 
 // **새로 추가할 함수**: 아직 첨삭되지 않은 이력서를 찾아 첨삭 요약본을 생성하고 저장
-const runAutomaticResumeEditingSummary = async () => {
+const runAutomaticResumeReviewSummary = async () => {
   try {
-    // resumes_editing_summaries 테이블에 없는 이력서 ID를 찾음
+    // resumes_review_summaries 테이블에 없는 이력서 ID를 찾음
     const [resumesToEdit] = await db.query(`
       SELECT id FROM resumes
-      WHERE id NOT IN (SELECT resume_id FROM resumes_editing_summaries)
+      WHERE id NOT IN (SELECT resume_id FROM resumes_review_summaries)
     `);
 
     console.log(`[자동 자기소개서 첨삭] 총 ${resumesToEdit.length}개의 첨삭되지 않은 이력서를 찾았습니다.`);
@@ -324,7 +324,7 @@ createAdminIfNotExists().then(() => {
     // 서버가 실행된 후 자동 요약 함수를 호출
     await runAutomaticSummary();
     await runAutomaticResumeSummary();
-    await runAutomaticResumeEditingSummary();
+    await runAutomaticResumeReviewSummary();
     await runAutomaticRecommendations();
     await runAutomaticApplicationRecommendations();
   });

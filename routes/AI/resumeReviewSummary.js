@@ -26,7 +26,7 @@ const generateSummary = async (prompt, model) => {
 };
 
 // 수정된 함수: summaryShort는 고정, summaryFull은 자기소개서 첨삭
-const createResumeEditingSummary = async (resumeId) => {
+const createResumeReviewSummary = async (resumeId) => {
     try {
         const [rows] = await db.query(
             `SELECT user_id, title, self_introduction FROM resumes WHERE id = ?`,
@@ -65,7 +65,7 @@ const createResumeEditingSummary = async (resumeId) => {
         const summaryShort = `${resume.title}의 첨삭 내용`;
 
         await db.query(
-            `INSERT INTO resumes_editing_summaries (resume_id, user_id, summary_short, summary_full) VALUES (?, ?, ?, ?)`,
+            `INSERT INTO resumes_review_summaries (resume_id, user_id, summary_short, summary_full) VALUES (?, ?, ?, ?)`,
             [resumeId, resume.user_id, summaryShort, summaryFull]
         );
 
@@ -83,7 +83,7 @@ router.post('/', async (req, res) => {
     const { id } = req.body;
     if (!id) return res.status(400).json({ success: false, message: "이력서 ID가 필요합니다." });
 
-    const result = await createResumeEditingSummary(id);
+    const result = await createResumeReviewSummary(id);
     if (result) {
         res.json({ success: true, message: "요약본이 성공적으로 생성되어 저장되었습니다.", summary: result });
     } else {
@@ -98,7 +98,7 @@ router.get('/resume/:resumeId', async (req, res) => {
 
     try {
         const [rows] = await db.query(
-            `SELECT summary_short, summary_full FROM resumes_editing_summaries WHERE resume_id = ?`,
+            `SELECT summary_short, summary_full FROM resumes_review_summaries WHERE resume_id = ?`,
             [resumeId]
         );
 
@@ -120,5 +120,5 @@ router.get('/resume/:resumeId', async (req, res) => {
 
 module.exports = {
     router,
-    createResumeEditingSummary,
+    createResumeReviewSummary,
 };
