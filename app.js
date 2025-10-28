@@ -13,7 +13,7 @@ const createAdminIfNotExists = require('./routes/Admin/createAdminIfNotExists');
 const { router: applicationRecommendationsRouter, generateApplicationRecommendations } = require('./routes/AI/applicationsRecommendations');
 const { router: jobRecommendationsRouter, generateRecommendationsForUser } = require('./routes/AI/jobRecommendations');
 const { router: jobSummaryRouter, createSummaryForJob } = require('./routes/AI/jobSummary');
-const { router: resumeReviewSummaryRouter, createResumeReViewSummary } = require('./routes/AI/resumeReviewSummary');
+const { router: resumeReviewSummaryRouter, createResumeReviewSummary } = require('./routes/AI/resumeReviewSummary');
 const { router: resumeSummaryRouter, createSummaryForResume } = require('./routes/AI/resumeSummary');
 
 // ===== Auth =====
@@ -250,7 +250,7 @@ const runAutomaticResumeReviewSummary = async () => {
     console.log(`[자동 자기소개서 첨삭] 총 ${resumesToEdit.length}개의 첨삭되지 않은 이력서를 찾았습니다.`);
 
     for (const resume of resumesToEdit) {
-      await createResumeReViewSummary(resume.id);
+      await createResumeReviewSummary(resume.id);
     }
 
     console.log('[자동 자기소개서 첨삭] 모든 첨삭 작업이 완료되었습니다.');

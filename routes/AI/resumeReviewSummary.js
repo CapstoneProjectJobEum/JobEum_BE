@@ -16,7 +16,7 @@ const generateSummary = async (prompt, model) => {
     try {
         const chatCompletion = await groqClient.chat.completions.create({
             messages: [{ role: "user", content: prompt }],
-            model: model || "groq/compound",
+            model: model || "openai/gpt-oss-120b",
         });
         return chatCompletion.choices[0].message.content;
     } catch (error) {
@@ -42,19 +42,19 @@ const createResumeReviewSummary = async (resumeId) => {
 
         // summaryFull 생성
         const fullPrompt = `
-       
-        다음 자기소개서를 읽고 개선하면 좋을 점과 개선 포인트를 3~5문장으로 요약해 주세요.
-        - 불필요한 서론/결론은 제거
-        - 문장 구조와 표현을 자연스럽게 다듬는 방법 제안
-        - 핵심 내용과 강점을 더 강조할 방법 제안
-        - 문법이나 표현 오류 수정 제안
-        - 실제 첨삭본을 만들 필요는 없고, '고치면 좋을 점' 중심으로 설명
+        당신은 취업 컨설턴트입니다. 다음 자기소개서를 읽고 **어떤 서론, 결론, 설명, 헤더(Reasoning, Result 등) 없이, 오직 4개의 핵심 문장**으로만 개선 포인트를 요약하여 출력해 주세요.
+
+        **반드시 지켜야 할 문장 형태 (총 4문장):**
+        1. **[구조/흐름]** 지원자의 경험을 더 효과적으로 전달하기 위해 **불필요한 서론/결론 제거 및 문단 구성을 어떻게 조정**해야 하는지 1문장으로 제안합니다.
+        2. **[강점/강조]** 지원자의 **핵심 경험과 기술(IT/개발 역량 등)**을 자기소개서 전반에서 어떻게 더 구체적인 성과나 수치로 강조**할 수 있는지** 1문장으로 제안합니다.
+        3. **[표현/어조]** 현재 문장 구조나 표현 중 **더 자연스럽고 전문적인 어조로 다듬어야 할 부분**과 그 방법을 1문장으로 제안합니다.
+        4. **[문법/오류]** 발견된 **명백한 문법적/맞춤법 오류나 어색한 표현**을 구체적으로 지적하고 수정 포인트를 1문장으로 제시합니다.
 
         자기소개서:
         ${resume.self_introduction}
         `;
 
-        const summaryFull = await generateSummary(fullPrompt, "groq/compound");
+        const summaryFull = await generateSummary(fullPrompt, "openai/gpt-oss-120b");
 
         if (!summaryFull) {
             console.error(`이력서 (ID: ${resumeId}) 자기소개서 첨삭에 실패했습니다.`);
