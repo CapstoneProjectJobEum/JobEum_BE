@@ -55,3 +55,4 @@ jest-coverage/
 
 # 기타 개인 설정
 *.local
+/generated/prisma

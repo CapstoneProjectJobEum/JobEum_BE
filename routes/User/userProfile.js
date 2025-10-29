@@ -1,12 +1,14 @@
 const express = require('express');
 const router = express.Router();
-const db = require('../../db');
+const { PrismaClient } = require('../../generated/prisma');
+const prisma = new PrismaClient();
+
 
 // 전체 사용자 프로필 조회
 router.get('/', async (req, res) => {
   try {
-    const [rows] = await db.query('SELECT * FROM user_profile');
-    res.json(rows);
+    const userProfiles = await prisma.user_profile.findMany();
+    res.json(userProfiles)
   } catch (err) {
     console.error('전체 사용자 프로필 조회 오류:', err);
     res.status(500).json({ success: false, message: err.message });
@@ -16,15 +18,23 @@ router.get('/', async (req, res) => {
 // 특정 사용자 프로필 조회
 router.get('/:userId', async (req, res) => {
   const { userId } = req.params;
+  const id = parseInt(userId)
+
+  if (isNaN(id)) {
+    return res.status(400).json({ success: false, message: '유효하지 않은 userId입니다.' });
+  }
+
   try {
-    const [rows] = await db.query(
-      'SELECT * FROM user_profile WHERE user_id = ?',
-      [userId]
-    );
-    if (rows.length === 0) {
+    const userProfile = await prisma.user_profile.findUnique({
+      where: {
+        user_id: id,
+      },
+    });
+
+    if (!userProfile) {
       return res.status(404).json({ success: false, message: '사용자 프로필이 없습니다.' });
     }
-    res.json(rows[0]);
+    res.json(userProfile);
   } catch (err) {
     console.error('특정 사용자 프로필 조회 오류:', err);
     res.status(500).json({ success: false, message: err.message });
@@ -46,23 +56,32 @@ router.post('/', async (req, res) => {
     return res.status(400).json({ success: false, message: 'userId는 필수입니다.' });
   }
 
+  const id = parseInt(userId);
+  if (isNaN(id)) {
+    return res.status(400).json({ success: false, message: '유효하지 않은 userId입니다.' });
+  }
+
   try {
-    const [result] = await db.query(
-      `INSERT INTO user_profile
-      (user_id, disability_types, disability_grade, assistive_devices, preferred_work_type, job_interest)
-      VALUES (?, ?, ?, ?, ?, ?)`,
-      [
-        userId,
-        disabilityTypes.join(','),
-        disabilityGrade,
-        assistiveDevices.join(','),
-        preferredWorkType.join(','),
-        jobInterest.join(',')
-      ]
-    );
-    res.json({ success: true, id: result.insertId });
+
+    const newUserProfile = await prisma.user_profile.create({
+      data: {
+        user_id: id,
+        disability_types: Array.isArray(disabilityTypes) ? disabilityTypes.join(',') : '',
+        disability_grade: disabilityGrade,
+        assistive_devices: Array.isArray(assistiveDevices) ? assistiveDevices.join(',') : '',
+        preferred_work_type: Array.isArray(preferredWorkType) ? preferredWorkType.join(',') : '',
+        job_interest: Array.isArray(jobInterest) ? jobInterest.join(',') : '',
+      }
+    });
+
+    res.json({ success: true, id: newUserProfile.id });
+
+
   } catch (err) {
     console.error('사용자 프로필 생성 오류:', err);
+    if (err.code === 'P2002') {
+      return res.status(409).json({ success: false, message: '해당 사용자(user_id)의 프로필이 이미 존재합니다. PUT을 사용해주세요.' });
+    }
     res.status(500).json({ success: false, message: err.message });
   }
 });
@@ -81,31 +100,31 @@ router.put('/', async (req, res) => {
   if (!userId) {
     return res.status(400).json({ success: false, message: 'userId는 필수입니다.' });
   }
+  const id = parseInt(userId);
+  if (isNaN(id)) {
+    return res.status(400).json({ success: false, message: '유효하지 않은 userId입니다.' });
+  }
 
   try {
-    await db.query(`
-      INSERT INTO user_profile (
-        user_id, disability_types, disability_grade, assistive_devices, preferred_work_type, job_interest
-      ) VALUES (?, ?, ?, ?, ?, ?)
-      ON DUPLICATE KEY UPDATE
-        disability_types = VALUES(disability_types),
-        disability_grade = VALUES(disability_grade),
-        assistive_devices = VALUES(assistive_devices),
-        preferred_work_type = VALUES(preferred_work_type),
-        job_interest = VALUES(job_interest),
-        updated_at = CURRENT_TIMESTAMP
-    `, [
-      userId,
-      Array.isArray(disabilityTypes) ? disabilityTypes.join(',') : '',
-      disabilityGrade,
-      Array.isArray(assistiveDevices) ? assistiveDevices.join(',') : '',
-      Array.isArray(preferredWorkType) ? preferredWorkType.join(',') : '',
-      Array.isArray(jobInterest) ? jobInterest.join(',') : '',
-    ]);
+    await prisma.user_profile.update({
+      where: {
+        user_id: id,
+      },
+      data: {
+        disability_types: Array.isArray(disabilityTypes) ? disabilityTypes.join(',') : '',
+        disability_grade: disabilityGrade,
+        assistive_devices: Array.isArray(assistiveDevices) ? assistiveDevices.join(',') : '',
+        preferred_work_type: Array.isArray(preferredWorkType) ? preferredWorkType.join(',') : '',
+        job_interest: Array.isArray(jobInterest) ? jobInterest.join(',') : '',
+      },
+    });
 
-    res.json({ success: true, message: '사용자 프로필이 저장되었습니다.' });
+    res.json({ success: true, message: '사용자 프로필이 수정되었습니다.' });
   } catch (err) {
-    console.error('사용자 프로필 저장 오류:', err);
+    console.error('사용자 프로필 수정 오류:', err);
+    if (err.code === 'P2025') {
+      return res.status(404).json({ success: false, message: '수정할 사용자 프로필이 없습니다. (POST를 사용하여 생성해주세요.)' });
+    }
     res.status(500).json({ success: false, message: err.message });
   }
 });

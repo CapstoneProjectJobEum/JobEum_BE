@@ -3,13 +3,19 @@
   "version": "1.0.0",
   "main": "app.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node app.js",
+    "dev": "nodemon app.js",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    
+    "prisma:pull": "node -r dotenv/config node_modules/.bin/prisma db pull",
+    "prisma:generate": "node -r dotenv/config node_modules/.bin/prisma generate"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@prisma/client": "^6.18.0",
     "axios": "^1.10.0",
     "bcryptjs": "^3.0.2",
     "cohere-ai": "^7.19.0",
@@ -25,6 +31,7 @@
     "socket.io": "^4.8.1"
   },
   "devDependencies": {
-    "nodemon": "^3.1.10"
+    "nodemon": "^3.1.10",
+    "prisma": "^6.18.0"
   }
 }
