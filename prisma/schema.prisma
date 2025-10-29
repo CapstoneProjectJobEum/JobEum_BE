@@ -1,0 +1,443 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ===========================================
+// ENUM DEFINITIONS (한글 @map 적용)
+// ===========================================
+
+// users.user_type (개인회원, 기업회원)
+enum users_user_type {
+  INDIVIDUAL @map("개인회원")
+  COMPANY @map("기업회원")
+}
+
+// users.role (MEMBER, COMPANY, ADMIN)
+enum users_role {
+  MEMBER
+  COMPANY
+  ADMIN
+}
+
+// users.gender (남자, 여자)
+enum users_gender {
+  MALE @map("남자")
+  FEMALE @map("여자")
+}
+
+// users.sns_provider
+enum users_sns_provider {
+  kakao
+  naver
+}
+
+// job_post.status
+enum job_post_status {
+  active
+  inactive
+}
+
+// inquiry.type
+enum inquiry_type {
+  SERVICE
+  BUG
+  PRAISE
+  OTHER
+}
+
+// inquiry.status
+enum inquiry_status {
+  OPEN
+  IN_PROGRESS
+  DONE
+}
+
+// report.target_type
+enum report_target_type {
+  JOB_POST
+  COMPANY
+  USER
+}
+
+// report.status
+enum report_status {
+  OPEN
+  REVIEWING
+  CLOSED
+}
+
+// applications.status (지원됨, 서류 심사중, ...)
+enum applications_status {
+  APPLIED @map("지원됨")
+  IN_REVIEW @map("서류 심사중")
+  FIRST_PASS @map("1차 합격")
+  INTERVIEW_SCHEDULED @map("면접 예정")
+  FINAL_PASS @map("최종 합격")
+  REJECTED @map("불합격")
+}
+
+// user_activity.activity_type
+enum user_activity_activity_type {
+  bookmark_job
+  bookmark_company
+  recent_view_job
+  application_status
+}
+
+// notifications.type
+enum notifications_type {
+  NEW_JOB_FROM_FAVORITE_COMPANY
+  FAVORITE_JOB_DEADLINE
+  APPLICATION_STATUS_UPDATE
+  EMP_APPLICATION_RECEIVED
+  EMP_JOB_DEADLINE
+  EMP_JOB_DELETED_BY_ADMIN
+  ADMIN_INQUIRY_CREATED
+  ADMIN_REPORT_CREATED
+  INQUIRY_REPORT_ANSWERED
+}
+
+// notification_settings.role
+enum notification_settings_role {
+  MEMBER
+  COMPANY
+  ADMIN
+}
+
+// ===========================================
+// MODEL DEFINITIONS
+// ===========================================
+
+model application_recommendations {
+  id          Int       @id @default(autoincrement())
+  user_id     Int
+  job_post_id Int
+  company_id  Int
+  score       Decimal   @db.Decimal(10, 8)
+  created_at  DateTime? @default(now()) @db.Timestamp(0)
+  users       users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "application_recommendations_ibfk_1")
+  job_post    job_post  @relation(fields: [job_post_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "application_recommendations_ibfk_2")
+
+  @@unique([user_id, job_post_id, company_id], map: "user_job_company_unique")
+  @@index([job_post_id], map: "job_post_id")
+  @@map("application_recommendations")
+}
+
+model applications {
+  id                                  Int                 @id @default(autoincrement())
+  user_id                             Int
+  job_id                              Int
+  resume_id                           Int
+  status                              applications_status? @default(APPLIED) @map("status") // ENUM 타입 수정 및 default 값 명시
+  is_viewed                           Boolean?            @default(false)
+  applied_at                          DateTime?           @default(now()) @db.DateTime(0)
+  updated_at                          DateTime?           @default(now()) @db.DateTime(0)
+  company_id                          Int
+  users_applications_user_idTousers   users               @relation("applications_user_idTousers", fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "applications_ibfk_1")
+  job_post                            job_post            @relation(fields: [job_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "applications_ibfk_2")
+  resumes                             resumes             @relation(fields: [resume_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "applications_ibfk_3")
+  users_applications_company_idTousers users              @relation("applications_company_idTousers", fields: [company_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_app_company")
+
+  @@unique([user_id, job_id, resume_id], map: "unique_application")
+  @@index([company_id], map: "fk_app_company")
+  @@index([job_id], map: "job_id")
+  @@index([resume_id], map: "resume_id")
+  @@map("applications")
+}
+
+model company_profile {
+  id              Int       @id @default(autoincrement())
+  user_id         Int       @unique(map: "user_id")
+  company_type    String?   @db.VarChar(50)
+  industry        String?   @db.VarChar(50)
+  employees       String?   @db.VarChar(50)
+  established_at  String?   @db.VarChar(10)
+  location        String?   @db.VarChar(255)
+  company_contact String?   @db.VarChar(20)
+  homepage        String?   @db.VarChar(255)
+  introduction    String?   @db.Text
+  created_at      DateTime? @default(now()) @db.Timestamp(0)
+  updated_at      DateTime? @default(now()) @db.Timestamp(0)
+  users           users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "company_profile_ibfk_1")
+
+  @@map("company_profile")
+}
+
+model inquiry {
+  id          Int             @id @default(autoincrement())
+  user_id     Int
+  type        inquiry_type    @default(OTHER)
+  title       String          @db.VarChar(200)
+  content     String          @db.Text
+  answer      String?         @db.Text
+  answered_at DateTime?       @db.Timestamp(0)
+  status      inquiry_status  @default(OPEN)
+  created_at  DateTime?       @default(now()) @db.Timestamp(0)
+  deleted_at  DateTime?       @db.Timestamp(0)
+  deleted_by  Int?
+  users       users           @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "inquiry_ibfk_1")
+
+  @@index([deleted_at], map: "idx_inquiry_deleted")
+  @@index([status], map: "idx_inquiry_status")
+  @@index([user_id], map: "user_id")
+  @@map("inquiry")
+}
+
+model job_post {
+  id                        Int                         @id @default(autoincrement())
+  user_id                   Int
+  title                     String                      @db.VarChar(100)
+  company                   String                      @db.VarChar(100)
+  location                  String?                     @db.VarChar(255)
+  deadline                  String?                     @db.VarChar(10)
+  detail                    String?                     @db.Text
+  preferred_skills          String?                     @db.Text
+  working_conditions        String?                     @db.Text
+  images                    Json?
+  disability_requirements   Json?
+  filters                   Json?
+  personalized              Json?
+  status                    job_post_status?            @default(active)
+  created_at                DateTime?                   @default(now()) @db.Timestamp(0)
+  application_recommendations application_recommendations[]
+  applications              applications[]
+  users                     users                       @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "job_post_ibfk_1")
+  job_summaries             job_summaries[]
+  user_recommendations      user_recommendations[]
+
+  @@index([deadline], map: "idx_job_post_deadline")
+  @@index([user_id], map: "idx_job_post_user")
+  @@map("job_post")
+}
+
+model job_summaries {
+  id          Int      @id @default(autoincrement())
+  job_post_id Int
+  user_id     Int
+  summary_short String @db.Text
+  summary_full  String @db.Text
+  created_at  DateTime @default(now()) @db.Timestamp(0)
+  job_post    job_post @relation(fields: [job_post_id], references: [id], onDelete: Cascade, map: "fk_job_post")
+  users       users    @relation(fields: [user_id], references: [id], onDelete: Cascade, map: "fk_user")
+
+  @@index([job_post_id], map: "fk_job_post")
+  @@index([user_id], map: "fk_user")
+  @@map("job_summaries")
+}
+
+model notification_settings {
+  id                Int                        @id @default(autoincrement())
+  user_id           Int
+  role              notification_settings_role
+  all_notifications Boolean?                   @default(true)
+  settings          Json
+  updated_at        DateTime?                  @default(now()) @db.Timestamp(0)
+  created_at        DateTime?                  @default(now()) @db.Timestamp(0)
+
+  @@unique([user_id, role], map: "unique_user_role")
+  @@map("notification_settings")
+}
+
+model notifications {
+  id         Int                 @id @default(autoincrement())
+  user_id    Int
+  type       notifications_type
+  title      String              @db.VarChar(200)
+  message    String              @db.Text
+  metadata   Json?
+  is_read    Int?                @default(0) @db.TinyInt
+  created_at DateTime?           @default(now()) @db.Timestamp(0)
+
+  @@index([user_id, created_at(sort: Desc)], map: "idx_user_created")
+  @@index([user_id, is_read], map: "idx_user_unread")
+  @@map("notifications")
+}
+
+model report {
+  id               Int           @id @default(autoincrement())
+  reporter_user_id Int
+  target_type      report_target_type
+  target_id        Int
+  reason           String        @db.Text
+  answer           String?       @db.Text
+  answered_at      DateTime?     @db.Timestamp(0)
+  status           report_status @default(OPEN)
+  created_at       DateTime?     @default(now()) @db.Timestamp(0)
+  deleted_at       DateTime?     @db.Timestamp(0)
+  deleted_by       Int?
+  users            users         @relation(fields: [reporter_user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "report_ibfk_1")
+
+  @@index([deleted_at], map: "idx_report_deleted")
+  @@index([status], map: "idx_report_status")
+  @@index([reporter_user_id], map: "reporter_user_id")
+  @@map("report")
+}
+
+model resumes {
+  id                      Int                 @id @default(autoincrement())
+  user_id                 Int
+  title                   String              @db.VarChar(255)
+  residence               String?             @db.VarChar(255)
+  education_detail        String?             @db.Text
+  career_detail           String?             @db.Text
+  self_introduction       String?             @db.Text
+  certificates            String?             @db.Text
+  internship_activities   String?             @db.Text
+  preferences_military    String?             @db.VarChar(255)
+  working_conditions      String?             @db.VarChar(255)
+  disability_requirements Json?
+  name                    String?             @db.VarChar(100)
+  birth                   String?             @db.VarChar(8)
+  gender                  String?             @db.VarChar(10)
+  phone                   String?             @db.VarChar(20)
+  email                   String?             @db.VarChar(255)
+  is_default              Boolean?            @default(false)
+  created_at              DateTime?           @default(now()) @db.DateTime(0)
+  updated_at              DateTime?           @default(now()) @db.DateTime(0)
+  applications            applications[]
+  users                   users               @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "resumes_ibfk_1")
+  resumes_review_summaries resumes_review_summaries[]
+  resumes_summaries       resumes_summaries[]
+
+  @@index([user_id], map: "user_id")
+  @@map("resumes")
+}
+
+model resumes_review_summaries {
+  id          Int      @id @default(autoincrement())
+  user_id     Int
+  resume_id   Int
+  summary_short String @db.Text
+  summary_full  String @db.Text
+  created_at  DateTime @default(now()) @db.Timestamp(0)
+  users       users    @relation(fields: [user_id], references: [id], onDelete: Cascade, map: "resumes_review_summaries_ibfk_1")
+  resumes     resumes  @relation(fields: [resume_id], references: [id], onDelete: Cascade, map: "resumes_review_summaries_ibfk_2")
+
+  @@index([resume_id], map: "resume_id")
+  @@index([user_id], map: "user_id")
+  @@map("resumes_review_summaries")
+}
+
+model resumes_summaries {
+  id          Int      @id @default(autoincrement())
+  user_id     Int
+  resume_id   Int
+  summary_short String @db.Text
+  summary_full  String @db.Text
+  created_at  DateTime @default(now()) @db.Timestamp(0)
+  users       users    @relation(fields: [user_id], references: [id], onDelete: Cascade, map: "resumes_summaries_ibfk_1")
+  resumes     resumes  @relation(fields: [resume_id], references: [id], onDelete: Cascade, map: "resumes_summaries_ibfk_2")
+
+  @@index([resume_id], map: "resume_id")
+  @@index([user_id], map: "user_id")
+  @@map("resumes_summaries")
+}
+
+model user_activity {
+  id            Int                       @id @default(autoincrement())
+  user_id       Int
+  activity_type user_activity_activity_type
+  target_id     Int
+  status        Int?                      @default(1) @db.TinyInt
+  created_at    DateTime?                 @default(now()) @db.DateTime(0)
+  updated_at    DateTime?                 @default(now()) @db.DateTime(0)
+  users         users                     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "user_activity_ibfk_1")
+
+  @@unique([user_id, activity_type, target_id], map: "unique_activity")
+  @@map("user_activity")
+}
+
+model user_favorite_company {
+  id         Int       @id @default(autoincrement())
+  user_id    Int
+  company_id Int
+  created_at DateTime? @default(now()) @db.Timestamp(0)
+
+  @@unique([user_id, company_id], map: "uq_user_company")
+  @@index([company_id, user_id], map: "idx_company_followers")
+  @@map("user_favorite_company")
+}
+
+model user_favorite_job {
+  id          Int       @id @default(autoincrement())
+  user_id     Int
+  job_post_id Int
+  created_at  DateTime? @default(now()) @db.Timestamp(0)
+
+  @@unique([user_id, job_post_id], map: "uq_user_job")
+  @@index([job_post_id, user_id], map: "idx_job_favoriters")
+  @@map("user_favorite_job")
+}
+
+model user_profile {
+  id                Int       @id @default(autoincrement())
+  user_id           Int       @unique(map: "user_id")
+  disability_types  String?   @db.Text
+  disability_grade  String?   @db.VarChar(50)
+  assistive_devices String?   @db.Text
+  preferred_work_type String? @db.Text
+  job_interest      String?   @db.Text
+  created_at        DateTime? @default(now()) @db.Timestamp(0)
+  updated_at        DateTime? @default(now()) @db.Timestamp(0)
+  users             users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "user_profile_ibfk_1")
+
+  @@map("user_profile")
+}
+
+model user_recommendations {
+  id          Int       @id @default(autoincrement())
+  user_id     Int
+  job_post_id Int
+  score       Decimal   @db.Decimal(10, 8)
+  created_at  DateTime? @default(now()) @db.Timestamp(0)
+  users       users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "user_recommendations_ibfk_1")
+  job_post    job_post  @relation(fields: [job_post_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "user_recommendations_ibfk_2")
+
+  @@unique([user_id, job_post_id], map: "user_job_unique")
+  @@index([job_post_id], map: "job_post_id")
+  @@map("user_recommendations")
+}
+
+model users {
+  id                                  Int                  @id @default(autoincrement())
+  user_type                           users_user_type      @default(INDIVIDUAL) @map("user_type") // ENUM 타입 수정 및 default 값 매핑
+  role                                users_role           @default(MEMBER)
+  name                                String?              @db.VarChar(50)
+  gender                              users_gender?
+  birth                               String?              @db.VarChar(8)
+  email                               String?              @db.VarChar(100)
+  phone                               String?              @db.VarChar(20)
+  username                            String?              @unique(map: "username") @db.VarChar(50)
+  password                            String?              @db.VarChar(255)
+  company                             String?              @db.VarChar(100)
+  biz_number                          String?              @db.VarChar(20)
+  manager                             String?              @db.VarChar(50)
+  sns_id                              String?              @unique(map: "sns_id") @db.VarChar(100)
+  sns_provider                        users_sns_provider?
+  created_at                          DateTime?            @default(now()) @db.Timestamp(0)
+  application_recommendations         application_recommendations[]
+  applications_applications_user_idTousers applications[] @relation("applications_user_idTousers")
+  applications_applications_company_idTousers applications[] @relation("applications_company_idTousers")
+  company_profile                     company_profile?
+  inquiry                             inquiry[]
+  job_post                            job_post[]
+  job_summaries                       job_summaries[]
+  report                              report[]
+  resumes                             resumes[]
+  resumes_review_summaries            resumes_review_summaries[]
+  resumes_summaries                   resumes_summaries[]
+  user_activity                       user_activity[]
+  user_profile                        user_profile?
+  user_recommendations                user_recommendations[]
+
+  @@map("users")
+}
