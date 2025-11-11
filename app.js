@@ -196,10 +196,10 @@ cron.schedule('2 9 * * *', async () => {
   }
 }, { timezone: 'Asia/Seoul' });
 
-// **새로 추가할 함수**: 아직 요약되지 않은 공고를 찾아 요약본을 생성하고 저장
+// 아직 요약되지 않은 공고를 찾아 요약본을 생성하고 저장
 const runAutomaticSummary = async () => {
   try {
-    // **수정된 쿼리**: job_summaries 테이블에 없는 공고 ID를 찾음
+    // job_summaries 테이블에 없는 공고 ID를 찾음
     const [jobsToSummarize] = await db.query(`
       SELECT id FROM job_post
       WHERE id NOT IN (SELECT job_post_id FROM job_summaries)
@@ -217,10 +217,10 @@ const runAutomaticSummary = async () => {
   }
 };
 
-// **새로 추가할 함수**: 아직 요약되지 않은 이력서를 찾아 요약본을 생성하고 저장
+// 아직 요약되지 않은 이력서를 찾아 요약본을 생성하고 저장
 const runAutomaticResumeSummary = async () => {
   try {
-    // **수정된 쿼리**: resume_summaries 테이블에 없는 이력서 ID를 찾음
+    // resume_summaries 테이블에 없는 이력서 ID를 찾음
     const [resumesToSummarize] = await db.query(`
           SELECT id FROM resumes
           WHERE id NOT IN (SELECT resume_id FROM resumes_summaries)
@@ -238,7 +238,7 @@ const runAutomaticResumeSummary = async () => {
   }
 };
 
-// **새로 추가할 함수**: 아직 첨삭되지 않은 이력서를 찾아 첨삭 요약본을 생성하고 저장
+// 아직 첨삭되지 않은 이력서를 찾아 첨삭 요약본을 생성하고 저장
 const runAutomaticResumeReviewSummary = async () => {
   try {
     // resumes_review_summaries 테이블에 없는 이력서 ID를 찾음
@@ -275,7 +275,7 @@ const runAutomaticRecommendations = async () => {
 
       if (existingRecs[0].count > 0) {
         console.log(`[추천 생성] 사용자 ID ${user.id}의 추천 목록이 이미 존재합니다. 건너뜁니다.`);
-        continue; // 다음 사용자로 넘어갑니다.
+        continue;
       }
 
       await generateRecommendationsForUser(user.id);
@@ -303,7 +303,7 @@ const runAutomaticApplicationRecommendations = async () => {
 
       if (existingRecs[0].count > 0) {
         console.log(`[추천 생성] 사용자 ID ${user.id}의 추천 목록이 이미 존재합니다. 건너뜁니다.`);
-        continue; // 다음 사용자로 넘어감
+        continue;
       }
 
       await generateApplicationRecommendations(user.id);
@@ -321,7 +321,6 @@ const PORT = process.env.PORT || 4000;
 createAdminIfNotExists().then(() => {
   server.listen(PORT, '0.0.0.0', async () => {
     console.log(`[서버] ${PORT}번 포트에서 실행 중`);
-    // 서버가 실행된 후 자동 요약 함수를 호출
     await runAutomaticSummary();
     await runAutomaticResumeSummary();
     await runAutomaticResumeReviewSummary();
